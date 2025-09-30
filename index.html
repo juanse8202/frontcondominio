@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#881337" />
+    <meta name="description" content="Aplicación para gestión de condominios" />
+  <!-- mobile-web-app-capable para navegadores modernos (sustituye al apple-mobile-web-app-capable deprecado) -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <!-- Mantener apple-mobile-web-app-capable por compatibilidad con iOS WebKit antiguas -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Condominio" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Apple / iOS Touch Icon principal -->
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+  <!-- (Opcional) Puedes generar tamaños adicionales si lo deseas -->
+
+  <!-- Startup images (placeholders) - reemplazar por assets reales si se desea -->
+  <!-- iPhone SE/8/7/6 (375x667 @2x) -->
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="/splash/launch-750x1334.png" />
+  <!-- iPhone 12/13/14/15 (390x844 @3x) -->
+  <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="/splash/launch-1170x2532.png" />
+  <!-- iPhone 14/15 Pro Max (430x932 @3x) -->
+  <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="/splash/launch-1290x2796.png" />
+  <!-- iPad 10.2" (810x1080 @2x) -->
+  <link rel="apple-touch-startup-image" media="(device-width: 810px) and (device-height: 1080px) and (-webkit-device-pixel-ratio: 2)" href="/splash/launch-1620x2160.png" />
+  <!-- Favicon estándar -->
+  <link rel="icon" type="image/svg+xml" href="/icons/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96x96.png" />
+  <link rel="shortcut icon" href="/icons/favicon.ico" />
+
+  <!-- Maskable icon hint (Chrome/Android) -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/web-app-manifest-192x192.png" />
+  <!-- Añadimos v=2 para forzar a los navegadores a refetchear el manifest y dejar de pedir icon-144 obsoleto -->
+  <link rel="manifest" href="/manifest.json?v=2" />
+    <title>Condominio</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Para utilizar esta aplicación, necesitas habilitar JavaScript en tu navegador.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+    <!-- El registro del Service Worker ahora se hace en src/main.jsx -->
+  </body>
+</html>

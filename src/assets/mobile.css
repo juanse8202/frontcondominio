@@ -1,0 +1,182 @@
+/* Estilos adicionales para dispositivos móviles */
+
+/* Media queries para diferentes tamaños de pantalla */
+@media (max-width: 640px) {
+  /* Ajustes generales */
+  html, body {
+    font-size: 14px;
+  }
+  
+  /* Ajustes de padding/margin para contenedores principales */
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  /* Reducciones de padding en tarjetas */
+  .card {
+    padding: 0.75rem;
+  }
+  
+  /* Reducir tamaños de texto para móviles */
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+  }
+  
+  /* Ajustes para tablas en móviles */
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Reducir padding en botones para móviles */
+  .btn-primary, .btn-secondary {
+    padding: 0.5rem 1rem;
+  }
+}
+
+/* Ajustes para pantallas muy pequeñas */
+@media (max-width: 360px) {
+  html, body {
+    font-size: 13px;
+  }
+  
+  /* Reducir aún más los paddings */
+  .card {
+    padding: 0.5rem;
+  }
+}
+
+/* Estilos específicos para orientación landscape en móviles */
+@media (max-height: 480px) and (orientation: landscape) {
+  /* Reducir alturas de elementos para evitar scroll vertical */
+  .navbar {
+    height: 3rem;
+  }
+  
+  /* Ajustar el sidebar en landscape */
+  .sidebar {
+    width: 15rem;
+  }
+  
+  /* Ocultar elementos no esenciales en landscape */
+  .sidebar-footer {
+    display: none;
+  }
+}
+
+/* Optimizaciones para dispositivos con notch */
+@supports (padding: max(0px)) {
+  .notch-padding-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .notch-padding-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .notch-padding-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .notch-padding-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Estilos para gestos táctiles */
+.swipeable {
+  touch-action: pan-y;
+}
+
+.swipeable-x {
+  touch-action: pan-x;
+}
+
+/* Optimizaciones para evitar delay táctil en iOS */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+/* Estilos para teclado virtual */
+@media (max-height: 600px) {
+  .keyboard-open {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}
+
+/* Mejoras para scrolling suave en iOS */
+.ios-momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Estilos para mejorar la accesibilidad en móviles */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Optimizaciones para pantallas de alta densidad */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .crisp-image {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Prevenir zoom en input fields en iOS */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+textarea {
+  font-size: 16px; /* Previene zoom en iOS */
+}
+
+/* Estilos para pull-to-refresh */
+.pull-indicator {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.875rem;
+}
+
+/* Ocultar scrollbar en webkit pero mantener funcionalidad */
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Estilos para cuadros de diálogo/modales en móviles */
+@media (max-width: 640px) {
+  .modal-mobile {
+    margin: 0;
+    border-radius: 1rem 1rem 0 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 90vh;
+    animation: slideUpModal 0.3s ease-out forwards;
+  }
+  
+  @keyframes slideUpModal {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+}

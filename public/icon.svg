@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Building base -->
+  <rect x="20" y="30" width="60" height="55" fill="#1e40af" stroke="#1e3a8a" stroke-width="2"/>
+  
+  <!-- Building top -->
+  <polygon points="20,30 50,15 80,30" fill="#1e3a8a"/>
+  
+  <!-- Windows -->
+  <rect x="28" y="40" width="8" height="8" fill="#dbeafe"/>
+  <rect x="46" y="40" width="8" height="8" fill="#dbeafe"/>
+  <rect x="64" y="40" width="8" height="8" fill="#dbeafe"/>
+  
+  <rect x="28" y="52" width="8" height="8" fill="#dbeafe"/>
+  <rect x="46" y="52" width="8" height="8" fill="#dbeafe"/>
+  <rect x="64" y="52" width="8" height="8" fill="#dbeafe"/>
+  
+  <rect x="28" y="64" width="8" height="8" fill="#dbeafe"/>
+  <rect x="46" y="64" width="8" height="8" fill="#dbeafe"/>
+  <rect x="64" y="64" width="8" height="8" fill="#dbeafe"/>
+  
+  <!-- Door -->
+  <rect x="44" y="72" width="12" height="13" fill="#1e3a8a"/>
+  
+  <!-- Door handle -->
+  <circle cx="52" cy="78" r="1" fill="#dbeafe"/>
+  
+  <!-- Ground line -->
+  <rect x="10" y="85" width="80" height="3" fill="#374151"/>
+  
+  <!-- Title text -->
+  <text x="50" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="6" fill="#1e40af" font-weight="bold">CONDOMINIO</text>
+</svg>

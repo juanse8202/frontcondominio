@@ -1,0 +1,334 @@
+import React, { useState } from 'react';
+import usePagedList from '../../hooks/usePagedList';
+import axiosInstance from '../../api/axiosConfig';
+import PageHeader from '../common/PageHeader';
+import Table from '../common/Table';
+import Button from '../common/Button';
+import Input from '../common/Input';
+import Select from '../common/Select';
+import Modal from '../common/Modal';
+import Badge from '../common/Badge';
+import { Megaphone, RefreshCw, Filter, Plus, Edit3, Trash2, Eye, Users, FileDown, Send } from 'lucide-react';
+
+// Tipos permitidos
+const TIPO_OPTIONS = [
+  { value: 'general', label: 'General' },
+  { value: 'reunion', label: 'Reunión' },
+  { value: 'expensa', label: 'Expensa' },
+  { value: 'mora', label: 'Mora' },
+  { value: 'seguridad', label: 'Seguridad' }
+];
+
+const tipoVariant = (tipo) => {
+  switch (tipo) {
+    case 'mora': return 'error';
+    case 'seguridad': return 'warning';
+    case 'expensa': return 'info';
+    case 'reunion': return 'success';
+    default: return 'neutral';
+  }
+};
+
+const ComunicadosAdmin = () => {
+  const { items, loading, error, page, setPage, count, setFilter, filters, refresh, addItem, updateItem, removeItem } = usePagedList({
+    endpoint: '/comunicados/',
+    pageSize: 20,
+    initialFilters: { search: '', tipo: '' }
+  });
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [showDetail, setShowDetail] = useState(null);
+  const [formData, setFormData] = useState({ titulo: '', mensaje: '', tipo: 'general', es_masivo: true, propietario: '' });
+  const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [detailData, setDetailData] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  // Panel acciones masivas
+  const [showMass, setShowMass] = useState(false);
+  const [morososData, setMorososData] = useState(null);
+  const [morososLoading, setMorososLoading] = useState(false);
+  const [morososThreshold, setMorososThreshold] = useState(3);
+  const [sendingMorosos, setSendingMorosos] = useState(false);
+  const [sendingLista, setSendingLista] = useState(false);
+  const [listaPropietarios, setListaPropietarios] = useState('');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [morososMensaje, setMorososMensaje] = useState({
+    titulo: 'Aviso de Mora',
+    mensaje: 'Tiene expensas pendientes. Regularice para evitar restricciones.',
+    tipo: 'mora'
+  });
+  const [listaMensaje, setListaMensaje] = useState({
+    titulo: 'Comunicado',
+    mensaje: 'Detalle del comunicado',
+    tipo: 'general'
+  });
+
+  const openCreate = () => {
+    setEditing(null);
+    setFormData({ titulo: '', mensaje: '', tipo: 'general', es_masivo: true, propietario: '' });
+    setShowForm(true);
+    setFeedback(null);
+  };
+
+  const openEdit = (row) => {
+    setEditing(row);
+    setFormData({
+      titulo: row.titulo || '',
+      mensaje: row.mensaje || '',
+      tipo: row.tipo || 'general',
+      es_masivo: row.es_masivo ?? true,
+      propietario: row.propietario || ''
+    });
+    setShowForm(true);
+  };
+
+  const openDetail = async (row) => {
+    setShowDetail(row.id);
+    setDetailLoading(true);
+    setDetailData(null);
+    try {
+      const resp = await axiosInstance.get(`/comunicados/${row.id}/`);
+      setDetailData(resp.data);
+    } catch (err) {
+      setDetailData(row);
+      setFeedback({ type: 'error', message: 'No se pudo cargar detalle completo.' });
+    } finally { setDetailLoading(false); }
+  };
+
+  const validate = () => {
+    if (!formData.titulo.trim()) return 'El título es requerido';
+    if (!formData.mensaje.trim()) return 'El mensaje es requerido';
+    if (formData.es_masivo === false && !formData.propietario) return 'Propietario requerido cuando no es masivo';
+    if (formData.es_masivo === true && formData.propietario) return 'No debe seleccionar propietario si es masivo';
+    return null;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true); setFeedback(null);
+    try {
+      const valErr = validate();
+      if (valErr) throw new Error(valErr);
+      const payload = {
+        titulo: formData.titulo.trim(),
+        mensaje: formData.mensaje.trim(),
+        tipo: formData.tipo,
+        es_masivo: formData.es_masivo,
+        propietario: formData.es_masivo ? null : (formData.propietario ? Number(formData.propietario) : null)
+      };
+      if (editing) {
+        const resp = await axiosInstance.patch(`/comunicados/${editing.id}/`, payload);
+        updateItem(editing.id, resp.data);
+        setFeedback({ type: 'success', message: 'Comunicado actualizado' });
+      } else {
+        const resp = await axiosInstance.post('/comunicados/', payload);
+        addItem(resp.data);
+        setFeedback({ type: 'success', message: 'Comunicado creado' });
+        setFormData({ titulo: '', mensaje: '', tipo: 'general', es_masivo: true, propietario: '' });
+      }
+      setTimeout(() => { setShowForm(false); setFeedback(null); }, 800);
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.response?.data?.detail || err.message || 'Error al guardar' });
+    } finally { setSaving(false); }
+  };
+
+  const deleteComunicado = async (row) => {
+    if (!window.confirm('¿Eliminar comunicado?')) return;
+    setDeletingId(row.id);
+    setFeedback(null);
+    try {
+      await axiosInstance.delete(`/comunicados/${row.id}/`);
+      removeItem(row.id);
+      setFeedback({ type: 'success', message: 'Eliminado' });
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.response?.data?.detail || 'No se pudo eliminar' });
+    } finally { setDeletingId(null); }
+  };
+
+  const columns = [
+    { key: 'id', header: 'ID', render: v => <span className="text-xs text-white/60">{v}</span> },
+    { key: 'tipo', header: 'Tipo', render: v => <Badge variant={tipoVariant(v)}>{v}</Badge> },
+    { key: 'titulo', header: 'Título', render: (v, row) => <button className="text-left text-blue-300 hover:underline" onClick={() => openDetail(row)}>{v || '—'}</button> },
+    { key: 'es_masivo', header: 'Alcance', render: (v, row) => v ? <Badge variant="info">Masivo</Badge> : <Badge variant="secondary">Prop: {row.propietario || row.propietario_nombre || '?'}</Badge> },
+    { key: 'fecha_envio', header: 'Enviado', render: v => v ? new Date(v).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '—' },
+    { key: 'actions', header: 'Acciones', className: 'text-right', cellClassName: 'text-right', render: (_, row) => (
+      <div className="flex justify-end gap-2">
+        <Button variant="icon" icon={Eye} onClick={() => openDetail(row)} title="Ver" />
+        <Button variant="icon" icon={Edit3} onClick={() => openEdit(row)} title="Editar" />
+        <Button variant="icon" icon={Trash2} loading={deletingId === row.id} onClick={() => deleteComunicado(row)} title="Eliminar" />
+      </div>
+    ) }
+  ];
+
+  const headerActions = (
+    <div className="flex gap-2 flex-wrap">
+      <Button variant="primary" icon={Plus} onClick={openCreate}>Nuevo</Button>
+      <Button variant="secondary" icon={Filter} onClick={() => setShowFilters(v => !v)}>Filtros</Button>
+      <Button variant="secondary" icon={RefreshCw} onClick={refresh}>Refrescar</Button>
+  <Button variant="secondary" icon={Users} onClick={() => setShowMass(v => !v)}>{showMass ? 'Ocultar' : 'Masivo'}</Button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 animate-fade-in ">
+      <PageHeader
+        title="Comunicados"
+        description="Avisos y notificaciones a propietarios"
+        icon={Megaphone}
+        actions={headerActions}
+      />
+
+      {showFilters && (
+        <div className="card-minimal p-4 space-y-4 animate-slide-down">
+          <div className="grid md:grid-cols-5 gap-4">
+            <Input label="Buscar (título)" value={filters.search || ''} onChange={(e) => setFilter('search', e.target.value)} placeholder="Buscar..." />
+            <Select label="Tipo" value={filters.tipo} onChange={(e) => setFilter('tipo', e.target.value)} options={[{ value: '', label: 'Todos' }, ...TIPO_OPTIONS]} />
+          </div>
+        </div>
+      )}
+
+      {feedback && !showForm && !showDetail && (
+        <div className={feedback.type === 'success' ? 'alert-success' : 'alert-error'}>{feedback.message}</div>
+      )}
+      {error && <div className="alert-error">{error}</div>}
+
+      {showMass && (
+        <div className="card-minimal p-4 space-y-4 animate-slide-down">
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3 items-end">
+                <Input label="Mora >=" type="number" min={1} value={morososThreshold} onChange={(e) => setMorososThreshold(Number(e.target.value) || 1)} />
+                <Button variant="secondary" size="sm" loading={morososLoading} onClick={async () => {
+                  setMorososLoading(true); setFeedback(null);
+                  try { const resp = await axiosInstance.get(`/comunicados/morosos/`, { params: { threshold: morososThreshold } }); setMorososData(resp.data); }
+                  catch (err) { setFeedback({ type: 'error', message: err.response?.data?.detail || 'Error morosos' }); }
+                  finally { setMorososLoading(false); }
+                }}>Cargar</Button>
+                <Button variant="secondary" size="sm" icon={FileDown} loading={pdfLoading} onClick={async () => {
+                  setPdfLoading(true); setFeedback(null);
+                  try { const resp = await axiosInstance.get('/comunicados/morosos_pdf/', { params: { threshold: morososThreshold }, responseType: 'blob' }); const url = window.URL.createObjectURL(new Blob([resp.data])); const a = document.createElement('a'); a.href = url; a.download = `morosos_${morososThreshold}.pdf`; a.click(); window.URL.revokeObjectURL(url); }
+                  catch (err) { setFeedback({ type: 'error', message: err.response?.data?.detail || 'Error PDF' }); }
+                  finally { setPdfLoading(false); }
+                }}>PDF</Button>
+              </div>
+              {morososData && (
+                <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs max-h-36 overflow-auto">
+                  <div className="flex justify-between text-white/40 mb-1"><span>{morososData.count} prop.</span><span>≥ {morososData.threshold}m</span></div>
+                  {morososData.propietarios?.map(p => (<div key={p.id} className="flex justify-between"><span className="truncate">#{p.id} {p.nombre}</span><span className="text-white/40">{p.meses_mora}</span></div>))}
+                </div>
+              )}
+              <Input label="Título" value={morososMensaje.titulo} onChange={(e) => setMorososMensaje(d => ({ ...d, titulo: e.target.value }))} />
+              <Select label="Tipo" value={morososMensaje.tipo} onChange={(e) => setMorososMensaje(d => ({ ...d, tipo: e.target.value }))} options={TIPO_OPTIONS} />
+              <div className="flex flex-col">
+                <label className="text-white/50 text-xs mb-1">Mensaje</label>
+                <textarea value={morososMensaje.mensaje} onChange={(e) => setMorososMensaje(d => ({ ...d, mensaje: e.target.value }))} className="bg-white/10 border border-white/20 rounded-lg px-2 py-2 text-white text-xs min-h-[70px] focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </div>
+              <Button variant="primary" size="sm" icon={Send} loading={sendingMorosos} disabled={!morososData?.count} onClick={async () => {
+                setSendingMorosos(true); setFeedback(null);
+                try { const resp = await axiosInstance.post('/comunicados/enviar_morosos/', { ...morososMensaje, threshold: morososThreshold }); setFeedback({ type: 'success', message: `Generados: ${resp.data.creados}` }); refresh(); }
+                catch (err) { setFeedback({ type: 'error', message: err.response?.data?.detail || 'Error enviando' }); }
+                finally { setSendingMorosos(false); }
+              }}>Enviar Morosos</Button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-white/50 text-xs mb-1">Propietarios (IDs coma)</label>
+                <textarea value={listaPropietarios} onChange={(e) => setListaPropietarios(e.target.value)} className="w-full bg-white/10 border border-white/20 rounded-lg px-2 py-2 text-white text-xs min-h-[70px] focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="12,19,31" />
+              </div>
+              <Input label="Título" value={listaMensaje.titulo} onChange={(e) => setListaMensaje(d => ({ ...d, titulo: e.target.value }))} />
+              <Select label="Tipo" value={listaMensaje.tipo} onChange={(e) => setListaMensaje(d => ({ ...d, tipo: e.target.value }))} options={TIPO_OPTIONS} />
+              <div className="flex flex-col">
+                <label className="text-white/50 text-xs mb-1">Mensaje</label>
+                <textarea value={listaMensaje.mensaje} onChange={(e) => setListaMensaje(d => ({ ...d, mensaje: e.target.value }))} className="bg-white/10 border border-white/20 rounded-lg px-2 py-2 text-white text-xs min-h-[70px] focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </div>
+              <Button variant="primary" size="sm" icon={Send} loading={sendingLista} disabled={!listaPropietarios.trim()} onClick={async () => {
+                setSendingLista(true); setFeedback(null);
+                try { const propietarios = listaPropietarios.split(',').map(v => Number(v.trim())).filter(v => !isNaN(v)); const resp = await axiosInstance.post('/comunicados/enviar_propietarios/', { propietarios, ...listaMensaje }); setFeedback({ type: 'success', message: `Creación: ${resp.data.creados}${resp.data.no_encontrados?.length ? ' | No: ' + resp.data.no_encontrados.join(',') : ''}` }); refresh(); }
+                catch (err) { setFeedback({ type: 'error', message: err.response?.data?.detail || 'Error envío lista' }); }
+                finally { setSendingLista(false); }
+              }}>Enviar Lista</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Table
+        columns={columns}
+        data={items}
+        loading={loading}
+        emptyMessage="No hay comunicados"
+      />
+
+      {count > 20 && (
+        <div className="flex justify-end gap-2 items-center text-white/60 text-sm">
+          <Button variant="secondary" disabled={page <= 1} onClick={() => setPage(page - 1)}>Anterior</Button>
+          <span>Página {page}</span>
+          <Button variant="secondary" disabled={(page * 20) >= count} onClick={() => setPage(page + 1)}>Siguiente</Button>
+        </div>
+      )}
+
+      {/* Modal Crear/Editar */}
+      <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editing ? `Editar Comunicado #${editing.id}` : 'Nuevo Comunicado'} size="lg">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {feedback && showForm && (
+            <div className={feedback.type === 'success' ? 'alert-success' : 'alert-error'}>{feedback.message}</div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <Input label="Título" value={formData.titulo} onChange={(e) => setFormData(d => ({ ...d, titulo: e.target.value }))} required placeholder="Ej: Corte de agua" />
+            </div>
+            <Select label="Tipo" value={formData.tipo} onChange={(e) => setFormData(d => ({ ...d, tipo: e.target.value }))} options={TIPO_OPTIONS} />
+            <div className="flex items-center gap-2 mt-2">
+              <input type="checkbox" id="es_masivo" checked={formData.es_masivo} onChange={(e) => setFormData(d => ({ ...d, es_masivo: e.target.checked, propietario: '' }))} className="w-4 h-4 accent-blue-500" />
+              <label htmlFor="es_masivo" className="text-white/70 text-sm">Masivo</label>
+            </div>
+            {!formData.es_masivo && (
+              <Input label="Propietario ID" value={formData.propietario} onChange={(e) => setFormData(d => ({ ...d, propietario: e.target.value }))} placeholder="ID" required />
+            )}
+            <div className="col-span-2 flex flex-col">
+              <label className="text-white/60 text-sm mb-1">Mensaje</label>
+              <textarea
+                value={formData.mensaje}
+                onChange={(e) => setFormData(d => ({ ...d, mensaje: e.target.value }))}
+                className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[120px]"
+                placeholder="Contenido del comunicado"
+                required
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowForm(false)} disabled={saving}>Cancelar</Button>
+            <Button type="submit" loading={saving}>{editing ? 'Guardar Cambios' : 'Publicar'}</Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Detalle */}
+      <Modal isOpen={!!showDetail} onClose={() => { setShowDetail(null); setDetailData(null); }} title={detailData ? detailData.titulo : 'Comunicado'} size="lg">
+        {detailLoading && <div className="py-8 text-center text-white/70">Cargando...</div>}
+        {detailData && (
+          <div className="space-y-5 text-sm text-white/80">
+            <div className="flex flex-wrap gap-3 items-center">
+              <Badge variant={tipoVariant(detailData.tipo)}>{detailData.tipo}</Badge>
+              <Badge variant={detailData.es_masivo ? 'info' : 'secondary'}>{detailData.es_masivo ? 'Masivo' : `Propietario ${detailData.propietario || detailData.propietario_nombre || ''}`}</Badge>
+              <Badge variant="neutral">{detailData.fecha_envio ? new Date(detailData.fecha_envio).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</Badge>
+            </div>
+            <div>
+              <label className="block text-white/50 mb-1">Mensaje</label>
+              <p className="whitespace-pre-line leading-relaxed text-white/70">{detailData.mensaje}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => openEdit(detailData)}>Editar</Button>
+              <Button variant="secondary" onClick={() => setShowDetail(null)}>Cerrar</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
+};
+
+export default ComunicadosAdmin;
