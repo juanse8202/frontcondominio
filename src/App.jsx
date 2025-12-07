@@ -4,19 +4,14 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import MainLayout from './components/Layout/MainLayout'
 import LoginPage from './components/Auth/LoginPage'
 
-// Páginas
-import DashboardPage from './pages/DashboardPage'
-import ExpensasPage from './pages/ExpensasPage'
-import UnidadesPage from './pages/UnidadesPage'
-import ReportesPage from './pages/ReportesPage'
-import VisitasPage from './pages/VisitasPage'
-import VehiculosPage from './pages/VehiculosPage'
-import PropietariosPage from './pages/PropietariosPage'
-import PagosPage from './pages/PagosPage'
-import AreasPage from './pages/AreasPage'
+// Páginas organizadas por módulos
+import { DashboardPage, PropietariosPage, UnidadesPage, VehiculosPage } from './pages/gestion'
+import { ExpensasPage, PagosPage } from './pages/finanzas'
+import { AreasPage, ReservasPage } from './pages/areas_comunes'
+import { ComunicadosPage } from './pages/comunicacion'
+import { ReportesPage } from './pages/mantenimiento'
+import { VisitasPage } from './pages/seguridad'
 import NotFoundPage from './pages/NotFoundPage'
-import ReservasPage from './pages/ReservasPage'
-import ComunicadosPage from './pages/ComunicadosPage'
 
 // Debug components
 import ApiTest from './components/Debug/ApiTest'
@@ -107,6 +102,27 @@ function App() {
             element={
               <ProtectedLayout>
                 <ApiTest />
+              </ProtectedLayout>
+            }
+          />
+
+          {/* Rutas Admin */}
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedLayout>
+                <DashboardPage />
+              </ProtectedLayout>
+            }
+          />
+          <Route
+            path="/configuracion"
+            element={
+              <ProtectedLayout>
+                <div className="p-6">
+                  <h1 className="text-2xl font-bold text-white mb-4">Configuración</h1>
+                  <p className="text-white/70">Página de configuración en desarrollo...</p>
+                </div>
               </ProtectedLayout>
             }
           />

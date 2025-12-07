@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { RefreshCw, Building2, Wallet2, AlertTriangle, Activity, Brain, CalendarClock, BarChart3, TrendingUp, Users } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis, XAxis, Tooltip as RTooltip, CartesianGrid, AreaChart, Area } from 'recharts';
-import useDashboard from '../hooks/useDashboard';
-import PageHeader from '../components/common/PageHeader';
-import Button from '../components/common/Button';
+import useDashboard from '../../hooks/useDashboard.jsx';
+import PageHeader from '../../components/common/PageHeader.jsx';
+import Button from '../../components/common/Button.jsx';
 
 const DashboardPage = () => {
   const { dashboardData, loading, error, refreshDashboard, lastUpdated } = useDashboard();

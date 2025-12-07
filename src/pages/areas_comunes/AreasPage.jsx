@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import usePagedList from '../hooks/usePagedList';
-import axiosInstance from '../api/axiosConfig';
-import PageHeader from '../components/common/PageHeader';
-import Table from '../components/common/Table';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Select from '../components/common/Select';
-import Modal from '../components/common/Modal';
-import Badge from '../components/common/Badge';
+import usePagedList from '../../hooks/usePagedList.jsx';
+import axiosInstance from '../../api/axiosConfig.jsx';
+import PageHeader from '../../components/common/PageHeader.jsx';
+import Table from '../../components/common/Table.jsx';
+import Button from '../../components/common/Button.jsx';
+import Input from '../../components/common/Input.jsx';
+import Select from '../../components/common/Select.jsx';
+import Modal from '../../components/common/Modal.jsx';
+import Badge from '../../components/common/Badge.jsx';
 import { Layers, RefreshCw, Filter, Plus, Edit3 } from 'lucide-react';
 
 // Refactor Administrativo Áreas según ADMIN_REPORTES_AREAS.md

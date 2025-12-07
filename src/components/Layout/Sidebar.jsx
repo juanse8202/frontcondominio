@@ -27,24 +27,62 @@ const Sidebar = ({ isOpen }) => {
   const [activeSubmenus, setActiveSubmenus] = useState({});
 
   const menuItems = [
-    { icon: Home, label: 'Dashboard', path: '/dashboard' },
-    { icon: Users, label: 'Propietarios', path: '/propietarios' },
-    { icon: Building, label: 'Unidades', path: '/unidades' },
-    { icon: Car, label: 'Vehículos', path: '/vehiculos' },
-    { icon: Calendar, label: 'Reservas', path: '/reservas' },
-    { icon: IdCard, label: 'Visitas', path: '/visitas' },
-    // Finanzas
-    { icon: CreditCard, label: 'Expensas', path: '/expensas' },
-    { icon: CreditCard, label: 'Pagos', path: '/pagos' },
-    // Infraestructura / otros
-    { icon: TreePalm, label: 'Áreas Comunes', path: '/areas' },
-    { icon: FileText, label: 'Reportes', path: '/reportes' },
-    { icon: Megaphone, label: 'Comunicados', path: '/comunicados' },
+    { 
+      icon: Home, 
+      label: 'Dashboard', 
+      path: '/dashboard' 
+    },
+    {
+      icon: Users,
+      label: 'Gestión',
+      submenu: [
+        { icon: Users, label: 'Propietarios', path: '/propietarios' },
+        { icon: Building, label: 'Unidades', path: '/unidades' },
+        { icon: Car, label: 'Vehículos', path: '/vehiculos' },
+      ]
+    },
+    {
+      icon: CreditCard,
+      label: 'Finanzas',
+      submenu: [
+        { icon: CreditCard, label: 'Expensas', path: '/expensas' },
+        { icon: CreditCard, label: 'Pagos', path: '/pagos' },
+      ]
+    },
+    {
+      icon: TreePalm,
+      label: 'Áreas Comunes',
+      submenu: [
+        { icon: TreePalm, label: 'Áreas', path: '/areas' },
+        { icon: Calendar, label: 'Reservas', path: '/reservas' },
+      ]
+    },
+    {
+      icon: Megaphone,
+      label: 'Comunicación',
+      submenu: [
+        { icon: Megaphone, label: 'Comunicados', path: '/comunicados' },
+      ]
+    },
+    {
+      icon: FileText,
+      label: 'Mantenimiento',
+      submenu: [
+        { icon: FileText, label: 'Reportes', path: '/reportes' },
+      ]
+    },
+    {
+      icon: IdCard,
+      label: 'Seguridad',
+      submenu: [
+        { icon: IdCard, label: 'Visitas', path: '/visitas' },
+      ]
+    },
   ];
 
   const adminMenuItems = isAdmin ? [
-    { icon: BarChart3, label: 'Analytics', path: '/dashboard' },
-    { icon: Settings, label: 'Configuración', path: '/dashboard' }
+    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Settings, label: 'Configuración', path: '/configuracion' }
   ] : [];
 
   const isActive = (path) => location.pathname === path;
@@ -118,6 +156,26 @@ const Sidebar = ({ isOpen }) => {
               )}
 
               {/* Submenús */}
+              {item.submenu && activeSubmenus[item.label] && (
+                <div className="ml-4 mt-1 space-y-1">
+                  {item.submenu.map((subitem) => (
+                    <Link
+                      key={subitem.path}
+                      to={subitem.path}
+                      className={`
+                        w-full flex items-center space-x-3 px-4 py-2 rounded-lg transition-all duration-300
+                        ${isActive(subitem.path)
+                          ? 'bg-teal-500/20 text-teal-400 border-l-2 border-teal-500'
+                          : 'text-white/70 hover:bg-teal-600/10 hover:text-teal-400 hover:border-l-2 hover:border-teal-500/50'
+                        }
+                      `}
+                    >
+                      <subitem.icon className="w-4 h-4" />
+                      <span className="text-sm font-medium">{subitem.label}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
 

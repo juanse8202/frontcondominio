@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import usePagedList from '../hooks/usePagedList';
-import axiosInstance from '../api/axiosConfig';
-import PageHeader from '../components/common/PageHeader';
-import Table from '../components/common/Table';
-import Button from '../components/common/Button';
-import Input from '../components/common/Input';
-import Modal from '../components/common/Modal';
-import Badge from '../components/common/Badge';
-import { Users, RefreshCw, Filter, Edit3, ShieldAlert } from 'lucide-react';
+import usePagedList from '../../hooks/usePagedList.jsx';
+import axiosInstance from '../../api/axiosConfig.jsx';
+import PageHeader from '../../components/common/PageHeader.jsx';
+import Table from '../../components/common/Table.jsx';
+import Button from '../../components/common/Button.jsx';
+import Input from '../../components/common/Input.jsx';
+import Modal from '../../components/common/Modal.jsx';
+import Badge from '../../components/common/Badge.jsx';
+import { Users, RefreshCw, Filter, Edit3, ShieldAlert, Plus } from 'lucide-react';
 
 // Gestión de Propietarios (Admin) según documentación API
-// Endpoints usados: GET /propietarios/ , PATCH /propietarios/{id}/
+// Endpoints usados: GET /propietarios/ , POST /propietarios/, PATCH /propietarios/{id}/
 
 const PropietariosPage = () => {
   const { items, loading, error, page, setPage, count, setFilter, filters, refresh, updateItem } = usePagedList({
@@ -21,8 +21,17 @@ const PropietariosPage = () => {
 
   const [showFilters, setShowFilters] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editData, setEditData] = useState({ meses_mora: 0, restringido_por_mora: false });
+  const [newPropietario, setNewPropietario] = useState({
+    username: '',
+    email: '',
+    first_name: '',
+    last_name: '',
+    documento_identidad: '',
+    telefono: ''
+  });
   const [feedback, setFeedback] = useState(null);
 
   const openEdit = (prop) => {
@@ -102,8 +111,42 @@ const PropietariosPage = () => {
     }
   ];
 
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setFeedback(null);
+    try {
+      await axiosInstance.post('/propietarios/', newPropietario);
+      setFeedback({ type: 'success', message: 'Propietario creado exitosamente' });
+      setTimeout(() => {
+        setShowCreate(false);
+        setNewPropietario({
+          username: '',
+          email: '',
+          first_name: '',
+          last_name: '',
+          documento_identidad: '',
+          telefono: ''
+        });
+        setFeedback(null);
+        refresh();
+      }, 1000);
+    } catch (err) {
+      const errorMsg = err.response?.data?.username?.[0] || 
+                       err.response?.data?.documento_identidad?.[0] ||
+                       err.response?.data?.detail || 
+                       'Error al crear propietario';
+      setFeedback({ type: 'error', message: errorMsg });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const headerActions = (
     <div className="flex gap-2">
+      <Button variant="primary" icon={Plus} onClick={() => setShowCreate(true)}>
+        Nuevo Propietario
+      </Button>
       <Button variant="secondary" icon={Filter} onClick={() => setShowFilters(v => !v)}>
         Filtros
       </Button>
@@ -156,7 +199,6 @@ const PropietariosPage = () => {
         className="bg-black text-white/90 border border-white/20 rounded-lg"
       />
 
-
       {/* Paginación simple */}
       {count > 20 && (
         <div className="flex justify-end gap-2 items-center text-white/60 text-sm">
@@ -166,6 +208,89 @@ const PropietariosPage = () => {
         </div>
       )}
 
+      {/* Modal Crear Propietario */}
+      <Modal
+        isOpen={showCreate}
+        onClose={() => { setShowCreate(false); setFeedback(null); }}
+        title="Nuevo Propietario"
+        size="md"
+      >
+        <form onSubmit={handleCreate} className="space-y-4">
+          {feedback && (
+            <div className={feedback.type === 'success' ? 'alert-success' : 'alert-error'}>
+              {feedback.message}
+            </div>
+          )}
+          
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              label="Nombre de usuario *"
+              value={newPropietario.username}
+              onChange={(e) => setNewPropietario({ ...newPropietario, username: e.target.value })}
+              placeholder="usuario123"
+              required
+            />
+            <Input
+              label="Email *"
+              type="email"
+              value={newPropietario.email}
+              onChange={(e) => setNewPropietario({ ...newPropietario, email: e.target.value })}
+              placeholder="correo@ejemplo.com"
+              required
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              label="Nombre *"
+              value={newPropietario.first_name}
+              onChange={(e) => setNewPropietario({ ...newPropietario, first_name: e.target.value })}
+              placeholder="Juan"
+              required
+            />
+            <Input
+              label="Apellido *"
+              value={newPropietario.last_name}
+              onChange={(e) => setNewPropietario({ ...newPropietario, last_name: e.target.value })}
+              placeholder="Pérez"
+              required
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              label="Documento de Identidad *"
+              value={newPropietario.documento_identidad}
+              onChange={(e) => setNewPropietario({ ...newPropietario, documento_identidad: e.target.value })}
+              placeholder="12345678"
+              required
+            />
+            <Input
+              label="Teléfono *"
+              value={newPropietario.telefono}
+              onChange={(e) => setNewPropietario({ ...newPropietario, telefono: e.target.value })}
+              placeholder="+1234567890"
+              required
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+            <Button 
+              type="button" 
+              variant="secondary" 
+              onClick={() => setShowCreate(false)} 
+              disabled={saving}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" loading={saving}>
+              Crear Propietario
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal Editar Mora */}
       <Modal
         isOpen={!!editing}
         onClose={() => { setEditing(null); setFeedback(null); }}

@@ -23,7 +23,6 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    host: true,
     proxy: {
       // Redirige las llamadas del frontend a /api -> backend local en 8000
       '/api': {
@@ -35,7 +34,6 @@ export default defineConfig({
     },
   },
   preview: {
-    port: 3000,
-    host: true
+    port: 3000
   }
 })
