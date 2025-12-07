@@ -6,7 +6,7 @@ import { refresh as refreshToken, logout as rawLogout } from './auth';
 // Definir en Vercel (Project Settings > Environment Variables):
 //  KEY: VITE_API_BASE_URL  VALUE: https://3.23.127.131 (o tu dominio con HTTPS)
 // En local usar .env.development o .env
-let rawBase = import.meta.env?.VITE_API_BASE_URL || ""; // Ej: https://api.midominio.com
+let rawBase = import.meta.env?.VITE_API_URL || ""; // Ej: https://api.midominio.com
 
 // Si la variable viene con /api al final, la limpiamos para que no duplique
 if (rawBase.endsWith('/api')) {
