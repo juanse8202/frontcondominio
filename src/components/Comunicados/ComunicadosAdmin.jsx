@@ -10,21 +10,20 @@ import Modal from '../common/Modal';
 import Badge from '../common/Badge';
 import { Megaphone, RefreshCw, Filter, Plus, Edit3, Trash2, Eye, Users, FileDown, Send } from 'lucide-react';
 
-// Tipos permitidos
+// Tipos permitidos (deben coincidir con el backend)
 const TIPO_OPTIONS = [
-  { value: 'general', label: 'General' },
-  { value: 'reunion', label: 'Reunión' },
-  { value: 'expensa', label: 'Expensa' },
-  { value: 'mora', label: 'Mora' },
-  { value: 'seguridad', label: 'Seguridad' }
+  { value: 'aviso', label: 'Aviso' },
+  { value: 'noticia', label: 'Noticia' },
+  { value: 'evento', label: 'Evento' },
+  { value: 'urgente', label: 'Urgente' }
 ];
 
 const tipoVariant = (tipo) => {
   switch (tipo) {
-    case 'mora': return 'error';
-    case 'seguridad': return 'warning';
-    case 'expensa': return 'info';
-    case 'reunion': return 'success';
+    case 'urgente': return 'error';
+    case 'evento': return 'warning';
+    case 'noticia': return 'info';
+    case 'aviso': return 'success';
     default: return 'neutral';
   }
 };
@@ -39,7 +38,7 @@ const ComunicadosAdmin = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showDetail, setShowDetail] = useState(null);
-  const [formData, setFormData] = useState({ titulo: '', mensaje: '', tipo: 'general', es_masivo: true, propietario: '' });
+  const [formData, setFormData] = useState({ titulo: '', contenido: '', tipo: 'aviso' });
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -58,17 +57,17 @@ const ComunicadosAdmin = () => {
   const [morososMensaje, setMorososMensaje] = useState({
     titulo: 'Aviso de Mora',
     mensaje: 'Tiene expensas pendientes. Regularice para evitar restricciones.',
-    tipo: 'mora'
+    tipo: 'urgente'
   });
   const [listaMensaje, setListaMensaje] = useState({
     titulo: 'Comunicado',
     mensaje: 'Detalle del comunicado',
-    tipo: 'general'
+    tipo: 'aviso'
   });
 
   const openCreate = () => {
     setEditing(null);
-    setFormData({ titulo: '', mensaje: '', tipo: 'general', es_masivo: true, propietario: '' });
+    setFormData({ titulo: '', contenido: '', tipo: 'aviso' });
     setShowForm(true);
     setFeedback(null);
   };
@@ -77,10 +76,8 @@ const ComunicadosAdmin = () => {
     setEditing(row);
     setFormData({
       titulo: row.titulo || '',
-      mensaje: row.mensaje || '',
-      tipo: row.tipo || 'general',
-      es_masivo: row.es_masivo ?? true,
-      propietario: row.propietario || ''
+      contenido: row.contenido || '',
+      tipo: row.tipo || 'aviso'
     });
     setShowForm(true);
   };
@@ -100,9 +97,7 @@ const ComunicadosAdmin = () => {
 
   const validate = () => {
     if (!formData.titulo.trim()) return 'El título es requerido';
-    if (!formData.mensaje.trim()) return 'El mensaje es requerido';
-    if (formData.es_masivo === false && !formData.propietario) return 'Propietario requerido cuando no es masivo';
-    if (formData.es_masivo === true && formData.propietario) return 'No debe seleccionar propietario si es masivo';
+    if (!formData.contenido.trim()) return 'El contenido es requerido';
     return null;
   };
 
@@ -114,10 +109,8 @@ const ComunicadosAdmin = () => {
       if (valErr) throw new Error(valErr);
       const payload = {
         titulo: formData.titulo.trim(),
-        mensaje: formData.mensaje.trim(),
-        tipo: formData.tipo,
-        es_masivo: formData.es_masivo,
-        propietario: formData.es_masivo ? null : (formData.propietario ? Number(formData.propietario) : null)
+        contenido: formData.contenido.trim(),
+        tipo: formData.tipo
       };
       if (editing) {
         const resp = await axiosInstance.patch(`/comunicados/${editing.id}/`, payload);
@@ -127,7 +120,7 @@ const ComunicadosAdmin = () => {
         const resp = await axiosInstance.post('/comunicados/', payload);
         addItem(resp.data);
         setFeedback({ type: 'success', message: 'Comunicado creado' });
-        setFormData({ titulo: '', mensaje: '', tipo: 'general', es_masivo: true, propietario: '' });
+        setFormData({ titulo: '', contenido: '', tipo: 'aviso' });
       }
       setTimeout(() => { setShowForm(false); setFeedback(null); }, 800);
     } catch (err) {
@@ -152,8 +145,8 @@ const ComunicadosAdmin = () => {
     { key: 'id', header: 'ID', render: v => <span className="text-xs text-white/60">{v}</span> },
     { key: 'tipo', header: 'Tipo', render: v => <Badge variant={tipoVariant(v)}>{v}</Badge> },
     { key: 'titulo', header: 'Título', render: (v, row) => <button className="text-left text-blue-300 hover:underline" onClick={() => openDetail(row)}>{v || '—'}</button> },
-    { key: 'es_masivo', header: 'Alcance', render: (v, row) => v ? <Badge variant="info">Masivo</Badge> : <Badge variant="secondary">Prop: {row.propietario || row.propietario_nombre || '?'}</Badge> },
-    { key: 'fecha_envio', header: 'Enviado', render: v => v ? new Date(v).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) : '—' },
+    { key: 'autor_nombre', header: 'Autor', render: v => <span className="text-xs text-white/70">{v || '—'}</span> },
+    { key: 'fecha_publicacion', header: 'Publicado', render: v => v ? new Date(v).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '—' },
     { key: 'actions', header: 'Acciones', className: 'text-right', cellClassName: 'text-right', render: (_, row) => (
       <div className="flex justify-end gap-2">
         <Button variant="icon" icon={Eye} onClick={() => openDetail(row)} title="Ver" />
@@ -276,23 +269,14 @@ const ComunicadosAdmin = () => {
           {feedback && showForm && (
             <div className={feedback.type === 'success' ? 'alert-success' : 'alert-error'}>{feedback.message}</div>
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <Input label="Título" value={formData.titulo} onChange={(e) => setFormData(d => ({ ...d, titulo: e.target.value }))} required placeholder="Ej: Corte de agua" />
-            </div>
+          <div className="space-y-4">
+            <Input label="Título" value={formData.titulo} onChange={(e) => setFormData(d => ({ ...d, titulo: e.target.value }))} required placeholder="Ej: Corte de agua" />
             <Select label="Tipo" value={formData.tipo} onChange={(e) => setFormData(d => ({ ...d, tipo: e.target.value }))} options={TIPO_OPTIONS} />
-            <div className="flex items-center gap-2 mt-2">
-              <input type="checkbox" id="es_masivo" checked={formData.es_masivo} onChange={(e) => setFormData(d => ({ ...d, es_masivo: e.target.checked, propietario: '' }))} className="w-4 h-4 accent-blue-500" />
-              <label htmlFor="es_masivo" className="text-white/70 text-sm">Masivo</label>
-            </div>
-            {!formData.es_masivo && (
-              <Input label="Propietario ID" value={formData.propietario} onChange={(e) => setFormData(d => ({ ...d, propietario: e.target.value }))} placeholder="ID" required />
-            )}
-            <div className="col-span-2 flex flex-col">
-              <label className="text-white/60 text-sm mb-1">Mensaje</label>
+            <div className="flex flex-col">
+              <label className="text-white/60 text-sm mb-1">Contenido</label>
               <textarea
-                value={formData.mensaje}
-                onChange={(e) => setFormData(d => ({ ...d, mensaje: e.target.value }))}
+                value={formData.contenido}
+                onChange={(e) => setFormData(d => ({ ...d, contenido: e.target.value }))}
                 className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[120px]"
                 placeholder="Contenido del comunicado"
                 required
@@ -313,12 +297,12 @@ const ComunicadosAdmin = () => {
           <div className="space-y-5 text-sm text-white/80">
             <div className="flex flex-wrap gap-3 items-center">
               <Badge variant={tipoVariant(detailData.tipo)}>{detailData.tipo}</Badge>
-              <Badge variant={detailData.es_masivo ? 'info' : 'secondary'}>{detailData.es_masivo ? 'Masivo' : `Propietario ${detailData.propietario || detailData.propietario_nombre || ''}`}</Badge>
-              <Badge variant="neutral">{detailData.fecha_envio ? new Date(detailData.fecha_envio).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</Badge>
+              <Badge variant="neutral">Autor: {detailData.autor_nombre || '—'}</Badge>
+              <Badge variant="neutral">{detailData.fecha_publicacion ? new Date(detailData.fecha_publicacion).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</Badge>
             </div>
             <div>
-              <label className="block text-white/50 mb-1">Mensaje</label>
-              <p className="whitespace-pre-line leading-relaxed text-white/70">{detailData.mensaje}</p>
+              <label className="block text-white/50 mb-1">Contenido</label>
+              <p className="whitespace-pre-line leading-relaxed text-white/70">{detailData.contenido}</p>
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="secondary" onClick={() => openEdit(detailData)}>Editar</Button>

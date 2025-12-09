@@ -37,6 +37,7 @@ const Sidebar = ({ isOpen }) => {
       label: 'Gestión',
       submenu: [
         { icon: Users, label: 'Propietarios', path: '/propietarios' },
+        { icon: UsersRound, label: 'Usuarios y Roles', path: '/usuarios' },
         { icon: Building, label: 'Unidades', path: '/unidades' },
         { icon: Car, label: 'Vehículos', path: '/vehiculos' },
       ]
@@ -76,6 +77,8 @@ const Sidebar = ({ isOpen }) => {
       label: 'Seguridad',
       submenu: [
         { icon: IdCard, label: 'Visitas', path: '/visitas' },
+        { icon: Car, label: 'Reconocer Placa', path: '/reconocimiento-placas' },
+        { icon: FileText, label: 'Historial Placas', path: '/historial-placas' },
       ]
     },
   ];

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import useUnidades from '../../hooks/useUnidades.jsx';
 import usePagedList from '../../hooks/usePagedList.jsx';
 import axiosInstance from '../../api/axiosConfig.jsx';
 import PageHeader from '../../components/common/PageHeader.jsx';
@@ -7,96 +8,230 @@ import Button from '../../components/common/Button.jsx';
 import Input from '../../components/common/Input.jsx';
 import Modal from '../../components/common/Modal.jsx';
 import Badge from '../../components/common/Badge.jsx';
-import { Building, RefreshCw, Filter, Eye, Ruler, User, Home } from 'lucide-react';
-
-// Gestión de Unidades (Admin)
-// Endpoints: GET /unidades/ , GET /unidades/{id}/ (detalle si fuera necesario), (crear/editar sería POST/PATCH pero aún no implementado aquí)
+import { Building, RefreshCw, Filter, Plus, Edit, Trash2 } from 'lucide-react';
 
 const UnidadesPage = () => {
+  const { createUnidad, updateUnidad, deleteUnidad } = useUnidades();
   const { items, loading, error, page, setPage, count, setFilter, filters, refresh } = usePagedList({
     endpoint: '/unidades/',
     pageSize: 20,
-    initialFilters: { tipo_unidad: '', search: '' }
+    initialFilters: { tipo: '', search: '' }
   });
 
   const [showFilters, setShowFilters] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [details, setDetails] = useState(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [showFormModal, setShowFormModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editingUnidad, setEditingUnidad] = useState(null);
+  const [deletingUnidad, setDeletingUnidad] = useState(null);
+  const [propietarios, setPropietarios] = useState([]);
+  const [loadingPropietarios, setLoadingPropietarios] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const fetchDetails = async (unidad) => {
-    setSelected(unidad);
-    setLoadingDetails(true);
-    setDetails(null);
+  const [formData, setFormData] = useState({
+    propietario: '',
+    numero: '',
+    edificio: '',
+    tipo: 'departamento',
+    piso: '',
+    caracteristicas: ''
+  });
+
+// Cargar lista de propietarios para el select
+  useEffect(() => {
+    const fetchPropietarios = async () => {
+      setLoadingPropietarios(true);
+      try {
+        const response = await axiosInstance.get('/propietarios/');
+        const data = response.data.results || response.data;
+        setPropietarios(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error('Error al cargar propietarios:', err);
+      } finally {
+        setLoadingPropietarios(false);
+      }
+    };
+    fetchPropietarios();
+  }, []);
+
+  const openCreateModal = () => {
+    setEditingUnidad(null);
+    setFormData({
+      propietario: '',
+      numero: '',
+      edificio: '',
+      tipo: 'departamento',
+      piso: '',
+      caracteristicas: ''
+    });
     setFeedback(null);
-    try {
-      const resp = await axiosInstance.get(`/unidades/${unidad.id}/`);
-      setDetails(resp.data);
-    } catch (err) {
-      setFeedback({ type: 'error', message: err.response?.data?.detail || 'Error al cargar detalles' });
-    } finally { setLoadingDetails(false); }
+    setShowFormModal(true);
   };
 
-  const tipoVariant = (tipo) => {
+  const openEditModal = (unidad) => {
+    setEditingUnidad(unidad);
+    setFormData({
+      propietario: unidad.propietario || '',
+      numero: unidad.numero || '',
+      edificio: unidad.edificio || '',
+      tipo: unidad.tipo || 'departamento',
+      piso: unidad.piso || '',
+      caracteristicas: unidad.caracteristicas || ''
+    });
+    setFeedback(null);
+    setShowFormModal(true);
+  };
+
+  const openDeleteModal = (unidad) => {
+    setDeletingUnidad(unidad);
+    setFeedback(null);
+    setShowDeleteModal(true);
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setFeedback(null);
+
+    if (!formData.propietario) {
+      setFeedback({ type: 'error', message: 'Debe seleccionar un propietario' });
+      setSubmitting(false);
+      return;
+    }
+    if (!formData.numero) {
+      setFeedback({ type: 'error', message: 'El número de unidad es requerido' });
+      setSubmitting(false);
+      return;
+    }
+
+    const dataToSend = {
+      propietario: parseInt(formData.propietario),
+      numero: formData.numero,
+      edificio: formData.edificio || '',
+      tipo: formData.tipo,
+      piso: formData.piso ? parseInt(formData.piso) : null,
+      caracteristicas: formData.caracteristicas || ''
+    };
+
+    let result;
+    if (editingUnidad) {
+      result = await updateUnidad(editingUnidad.id, dataToSend);
+    } else {
+      result = await createUnidad(dataToSend);
+    }
+
+    if (result.success) {
+      setFeedback({ type: 'success', message: editingUnidad ? 'Unidad actualizada exitosamente' : 'Unidad creada exitosamente' });
+      setTimeout(() => {
+        setShowFormModal(false);
+        refresh();
+      }, 1500);
+    } else {
+      let errorMsg = result.message;
+      if (typeof result.message === 'object') {
+        errorMsg = Object.entries(result.message)
+          .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+          .join('; ');
+      }
+      setFeedback({ type: 'error', message: errorMsg });
+    }
+
+    setSubmitting(false);
+  };
+
+  const handleDelete = async () => {
+    setSubmitting(true);
+    setFeedback(null);
+
+    const result = await deleteUnidad(deletingUnidad.id);
+
+    if (result.success) {
+      setFeedback({ type: 'success', message: 'Unidad eliminada exitosamente' });
+      setTimeout(() => {
+        setShowDeleteModal(false);
+        refresh();
+      }, 1500);
+    } else {
+      setFeedback({ type: 'error', message: result.message });
+    }
+
+    setSubmitting(false);
+  };
+
+const tipoVariant = (tipo) => {
     if (!tipo) return 'neutral';
     switch (tipo.toLowerCase()) {
-      case 'apartamento': return 'info';
       case 'casa': return 'success';
-      case 'local': return 'warning';
-      case 'oficina': return 'neutral';
+      case 'departamento': return 'info';
+      case 'penthouse': return 'warning';
       default: return 'default';
     }
   };
 
   const columns = [
-    { key: 'id', header: 'ID', render: (v) => <span className="text-xs text-white/60">{v}</span> },
-    { key: 'numero_unidad', header: 'Unidad', render: (v) => v || '—' },
-    { key: 'edificio', header: 'Edificio', render: (v) => v || '—' },
-    { key: 'tipo_unidad', header: 'Tipo', render: (v) => <Badge variant={tipoVariant(v)}>{v || '—'}</Badge> },
-    { key: 'area_m2', header: 'Área (m²)', render: (v) => v ? Number(v).toFixed(2) : '—' },
+    { key: 'id', header: 'ID', className: 'w-16', render: (v) => <span className="text-xs text-white/60">#{v}</span> },
+    { key: 'numero', header: 'Número', className: 'w-32', render: (v) => <span className="font-semibold">{v || '—'}</span> },
+    { key: 'edificio', header: 'Edificio', className: 'w-40', render: (v) => v || '—' },
+    { key: 'tipo', header: 'Tipo', className: 'w-36', render: (v) => <Badge variant={tipoVariant(v)}>{v || '—'}</Badge> },
+    { key: 'piso', header: 'Piso', className: 'w-20', render: (v) => v || '—' },
     { key: 'propietario_nombre', header: 'Propietario', render: (v) => v || '—' },
-    { key: 'actions', header: 'Acciones', className: 'text-right', cellClassName: 'text-right', render: (_, row) => (
-      <Button variant="icon" icon={Eye} onClick={() => fetchDetails(row)} title="Ver detalles" />
-    ) }
+    { 
+      key: 'actions', 
+      header: 'Acciones', 
+      className: 'text-right w-28', 
+      cellClassName: 'text-right', 
+      render: (_, row) => (
+        <div className="flex gap-2 justify-end">
+          <Button variant="icon" icon={Edit} onClick={() => openEditModal(row)} title="Editar" />
+          <Button variant="icon-danger" icon={Trash2} onClick={() => openDeleteModal(row)} title="Eliminar" />
+        </div>
+      ) 
+    }
   ];
 
-  const headerActions = (
+const headerActions = (
     <div className="flex gap-2">
+      <Button variant="primary" icon={Plus} onClick={openCreateModal}>Nueva Unidad</Button>
       <Button variant="secondary" icon={Filter} onClick={() => setShowFilters(v => !v)}>Filtros</Button>
       <Button variant="secondary" icon={RefreshCw} onClick={refresh}>Refrescar</Button>
     </div>
   );
 
-  return (
-    <div className="space-y-6 animate-fade-in ">
+return (
+    <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Unidades"
-        description="Listado de unidades habitacionales"
+        description="Listado y gestión de unidades habitacionales"
         icon={Building}
         actions={headerActions}
       />
 
       {showFilters && (
         <div className="card-minimal p-4 space-y-4 animate-slide-down">
-          <div className="grid md:grid-cols-4 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
             <Input
               label="Buscar (número/edificio)"
               value={filters.search || ''}
               onChange={(e) => setFilter('search', e.target.value)}
               placeholder="Buscar..."
             />
-            <select
-              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-              value={filters.tipo_unidad}
-              onChange={(e) => setFilter('tipo_unidad', e.target.value)}
-            >
-              <option value="">Tipo (Todos)</option>
-              <option value="apartamento">Apartamento</option>
-              <option value="casa">Casa</option>
-              <option value="local">Local</option>
-              <option value="oficina">Oficina</option>
-            </select>
+            <div>
+              <label className="block text-white/70 text-sm mb-2">Tipo</label>
+              <select
+                className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+                value={filters.tipo || ''}
+                onChange={(e) => setFilter('tipo', e.target.value)}
+              >
+                <option value="">Todos</option>
+                <option value="casa">Casa</option>
+                <option value="departamento">Departamento</option>
+                <option value="penthouse">Penthouse</option>
+              </select>
+            </div>
           </div>
         </div>
       )}
@@ -118,48 +253,148 @@ const UnidadesPage = () => {
         </div>
       )}
 
+{/* Modal de Formulario (Crear/Editar) */}
       <Modal
-        isOpen={!!selected}
-        onClose={() => { setSelected(null); setDetails(null); setFeedback(null); }}
-        title={selected ? `Unidad ${selected.numero_unidad || selected.id}` : ''}
+        isOpen={showFormModal}
+        onClose={() => setShowFormModal(false)}
+        title={editingUnidad ? 'Editar Unidad' : 'Nueva Unidad'}
         size="lg"
       >
-        {loadingDetails && (
-          <div className="py-8 text-center text-white/70">Cargando detalles...</div>
-        )}
-        {feedback && (
-          <div className={feedback.type === 'error' ? 'alert-error' : 'alert-success'}>{feedback.message}</div>
-        )}
-        {details && (
-          <div className="grid grid-cols-2 gap-4 text-sm text-white/80">
-            <div>
-              <label className="block text-white/50 mb-1">Número</label>
-              <p>{details.numero_unidad || '—'}</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {feedback && (
+            <div className={feedback.type === 'error' ? 'alert-error' : 'alert-success'}>
+              {feedback.message}
             </div>
-            <div>
-              <label className="block text-white/50 mb-1">Edificio</label>
-              <p>{details.edificio || '—'}</p>
-            </div>
-            <div>
-              <label className="block text-white/50 mb-1">Tipo</label>
-              <p className="flex items-center gap-2"><Home className="w-4 h-4" /> {details.tipo_unidad || '—'}</p>
-            </div>
-            <div>
-              <label className="block text-white/50 mb-1">Área</label>
-              <p className="flex items-center gap-2"><Ruler className="w-4 h-4" /> {details.area_m2 ? `${details.area_m2} m²` : '—'}</p>
-            </div>
-            <div className="col-span-2">
-              <label className="block text-white/50 mb-1">Propietario</label>
-              <p className="flex items-center gap-2"><User className="w-4 h-4" /> {details.propietario_nombre || '—'}</p>
-            </div>
-            {details.created_at && (
-              <div className="col-span-2">
-                <label className="block text-white/50 mb-1">Registrada</label>
-                <p>{new Date(details.created_at).toLocaleDateString('es-ES')}</p>
-              </div>
-            )}
+          )}
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Propietario *</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={formData.propietario}
+              onChange={(e) => handleInputChange('propietario', e.target.value)}
+              required
+              disabled={loadingPropietarios}
+            >
+              <option value="">Seleccionar propietario</option>
+              {propietarios.map(prop => (
+                <option key={prop.id} value={prop.id}>
+                  {prop.nombre_completo || prop.user?.username} - {prop.documento_identidad}
+                </option>
+              ))}
+            </select>
           </div>
-        )}
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              label="Número de Unidad *"
+              value={formData.numero}
+              onChange={(e) => handleInputChange('numero', e.target.value)}
+              placeholder="Ej: 101, A-5"
+              required
+            />
+
+            <Input
+              label="Edificio"
+              value={formData.edificio}
+              onChange={(e) => handleInputChange('edificio', e.target.value)}
+              placeholder="Ej: Torre A, Bloque B"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-white/70 text-sm mb-2">Tipo *</label>
+              <select
+                className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+                value={formData.tipo}
+                onChange={(e) => handleInputChange('tipo', e.target.value)}
+                required
+              >
+                <option value="casa">Casa</option>
+                <option value="departamento">Departamento</option>
+                <option value="penthouse">Penthouse</option>
+              </select>
+            </div>
+
+            <Input
+              label="Piso"
+              type="number"
+              value={formData.piso}
+              onChange={(e) => handleInputChange('piso', e.target.value)}
+              placeholder="Ej: 1, 2, 3"
+            />
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Características</label>
+            <textarea
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={formData.caracteristicas}
+              onChange={(e) => handleInputChange('caracteristicas', e.target.value)}
+              placeholder="Ej: 2 habitaciones, 1 baño, cocina integrada"
+              rows="3"
+            />
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowFormModal(false)}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={submitting}
+            >
+              {submitting ? 'Guardando...' : (editingUnidad ? 'Actualizar' : 'Crear')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal de Confirmación de Eliminación */}
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Eliminar Unidad"
+        size="sm"
+      >
+        <div className="space-y-4">
+          {feedback && (
+            <div className={feedback.type === 'error' ? 'alert-error' : 'alert-success'}>
+              {feedback.message}
+            </div>
+          )}
+
+          <p className="text-white/80">
+            ¿Estás seguro de que deseas eliminar la unidad <strong>{deletingUnidad?.numero}</strong>?
+            Esta acción no se puede deshacer.
+          </p>
+
+          <div className="flex gap-3 justify-end pt-4">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setShowDeleteModal(false)}
+              disabled={submitting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={handleDelete}
+              disabled={submitting}
+            >
+              {submitting ? 'Eliminando...' : 'Eliminar'}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

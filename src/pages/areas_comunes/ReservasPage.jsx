@@ -31,12 +31,35 @@ const ReservasPage = () => {
     initialFilters: { estado: '', area: '', fecha: '' }
   });
 
+  // Cargar propietarios y áreas
+  React.useEffect(() => {
+    const cargarOpciones = async () => {
+      setLoadingOptions(true);
+      try {
+        const [propResp, areasResp] = await Promise.all([
+          axiosInstance.get('/propietarios/'),
+          axiosInstance.get('/areas/')
+        ]);
+        setPropietarios(propResp.data.results || propResp.data || []);
+        setAreas(areasResp.data.results || areasResp.data || []);
+      } catch (err) {
+        console.error('Error cargando opciones:', err);
+      } finally {
+        setLoadingOptions(false);
+      }
+    };
+    cargarOpciones();
+  }, []);
+
   // UI State
   const [showFilters, setShowFilters] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [selected, setSelected] = useState(null);
   const [detalle, setDetalle] = useState(null);
+  const [propietarios, setPropietarios] = useState([]);
+  const [areas, setAreas] = useState([]);
+  const [loadingOptions, setLoadingOptions] = useState(false);
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [actionId, setActionId] = useState(null);
   const [feedback, setFeedback] = useState(null);
@@ -97,18 +120,17 @@ const ReservasPage = () => {
       const payload = {
         propietario: Number(formData.propietario),
         area: Number(formData.area),
-        fecha_reserva: formData.fecha_reserva,
+        fecha: formData.fecha_reserva,
         hora_inicio: formData.hora_inicio,
         hora_fin: formData.hora_fin,
-        num_personas: formData.num_personas ? Number(formData.num_personas) : 0,
-        invitados,
-        observaciones: formData.observaciones || undefined
+        num_personas: Number(formData.num_personas) || 1
       };
       const resp = await axiosInstance.post('/reservas/', payload);
       addItem(resp.data);
-      setFeedback({ type: 'success', message: 'Reserva creada (pendiente)' });
+      const costoMsg = resp.data.costo_total ? ` - Costo: Bs ${Number(resp.data.costo_total).toFixed(2)}` : '';
+      setFeedback({ type: 'success', message: `Reserva creada (pendiente)${costoMsg}` });
       setFormData({ propietario: '', area: '', fecha_reserva: '', hora_inicio: '', hora_fin: '', num_personas: '', observaciones: '', invitadosRaw: '' });
-      setTimeout(() => { setShowCreate(false); setFeedback(null); }, 1200);
+      setTimeout(() => { setShowCreate(false); setFeedback(null); }, 2000);
     } catch (err) {
       setFeedback({ type: 'error', message: err.response?.data?.detail || err.message || 'Error al crear' });
     } finally { setCreating(false); }
@@ -190,11 +212,11 @@ const ReservasPage = () => {
     { key: 'id', header: 'ID', render: v => <span className="text-xs text-white/60">{v}</span> },
     { key: 'propietario_nombre', header: 'Propietario', render: v => v || '—' },
     { key: 'area', header: 'Área', render: (_, r) => r.area_nombre || r.area || '—' },
-    { key: 'fecha_reserva', header: 'Fecha', render: v => v || '—' },
+    { key: 'fecha', header: 'Fecha', render: v => v ? new Date(v).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—' },
     { key: 'hora_inicio', header: 'Inicio', render: v => v || '—' },
     { key: 'hora_fin', header: 'Fin', render: v => v || '—' },
     { key: 'estado', header: 'Estado', render: v => <Badge variant={estadoVariant(v)}>{v}</Badge> },
-    { key: 'costo_total', header: 'Costo', render: v => v ? `$${Number(v).toFixed(2)}` : '—' },
+    { key: 'costo_total', header: 'Costo', render: v => v ? `Bs ${Number(v).toFixed(2)}` : '—' },
     { key: 'actions', header: 'Acciones', className: 'text-right', cellClassName: 'text-right', render: (_, row) => (
       <div className="flex justify-end gap-2">
         <Button variant="secondary" size="xs" icon={Eye} onClick={() => openDetalle(row)} />
@@ -287,37 +309,87 @@ const ReservasPage = () => {
           {feedback && showCreate && (
             <div className={feedback.type === 'success' ? 'alert-success' : 'alert-error'}>{feedback.message}</div>
           )}
-          <div className="grid md:grid-cols-4 gap-4">
-            <Input label="Propietario ID" value={formData.propietario} onChange={(e) => setFormData(d => ({ ...d, propietario: e.target.value }))} required />
-            <Input label="Área ID" value={formData.area} onChange={(e) => setFormData(d => ({ ...d, area: e.target.value }))} required />
-            <Input label="Fecha" type="date" value={formData.fecha_reserva} onChange={(e) => setFormData(d => ({ ...d, fecha_reserva: e.target.value }))} required />
-            <Input label="Personas" type="number" min={1} value={formData.num_personas} onChange={(e) => setFormData(d => ({ ...d, num_personas: e.target.value }))} required />
-            <Input label="Hora Inicio" type="time" value={formData.hora_inicio} onChange={(e) => setFormData(d => ({ ...d, hora_inicio: e.target.value }))} required />
-            <Input label="Hora Fin" type="time" value={formData.hora_fin} onChange={(e) => setFormData(d => ({ ...d, hora_fin: e.target.value }))} required />
-            <div className="md:col-span-4 flex flex-col">
-              <label className="block text-white/60 text-sm mb-1">Observaciones</label>
-              <textarea
-                value={formData.observaciones}
-                onChange={(e) => setFormData(d => ({ ...d, observaciones: e.target.value }))}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[70px]"
-                placeholder="Notas administrativas"
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <Select 
+                label="Propietario" 
+                value={formData.propietario} 
+                onChange={(e) => setFormData(d => ({ ...d, propietario: e.target.value }))} 
+                required
+                placeholder={loadingOptions ? 'Cargando...' : 'Seleccione propietario'}
+                options={propietarios.map(p => ({
+                  value: p.id,
+                  label: `${p.user?.first_name || ''} ${p.user?.last_name || ''}`.trim() || p.user?.username || `Propietario ${p.id}`
+                }))}
+              />
+              <Select 
+                label="Área" 
+                value={formData.area} 
+                onChange={(e) => setFormData(d => ({ ...d, area: e.target.value }))} 
+                required
+                placeholder={loadingOptions ? 'Cargando...' : 'Seleccione área'}
+                options={areas.map(a => ({
+                  value: a.id,
+                  label: a.nombre || `Área ${a.id}`
+                }))}
               />
             </div>
-            <div className="md:col-span-4 flex flex-col">
-              <label className="block text-white/60 text-sm mb-1">Invitados (uno por línea: Nombre|Documento)</label>
-              <textarea
-                value={formData.invitadosRaw}
-                onChange={(e) => setFormData(d => ({ ...d, invitadosRaw: e.target.value }))}
-                className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[90px] font-mono"
-                placeholder="Juan Perez|12345678\nAna Rios|87654321"
+            <div className="grid md:grid-cols-3 gap-4">
+              <Input label="Fecha" type="date" value={formData.fecha_reserva} onChange={(e) => setFormData(d => ({ ...d, fecha_reserva: e.target.value }))} required />
+              <div className="flex flex-col">
+                <label className="text-white/60 text-sm mb-1">Hora Inicio *</label>
+                <input 
+                  type="time" 
+                  value={formData.hora_inicio} 
+                  onChange={(e) => setFormData(d => ({ ...d, hora_inicio: e.target.value }))} 
+                  required
+                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 [color-scheme:dark]"
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className="text-white/60 text-sm mb-1">Hora Fin *</label>
+                <input 
+                  type="time" 
+                  value={formData.hora_fin} 
+                  onChange={(e) => setFormData(d => ({ ...d, hora_fin: e.target.value }))} 
+                  required
+                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 [color-scheme:dark]"
+                />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              <Input 
+                label="Número de Personas" 
+                type="number" 
+                min={1} 
+                value={formData.num_personas} 
+                onChange={(e) => setFormData(d => ({ ...d, num_personas: e.target.value }))} 
+                required 
+                placeholder="1"
               />
+              {formData.area && (() => {
+                const area = areas.find(a => a.id === Number(formData.area));
+                const tarifa = area?.tarifa_hora || '0';
+                const tipoCobro = area?.tipo_cobro || 'por_hora';
+                const mensaje = tipoCobro === 'pago_unico'
+                  ? `Tarifa: Bs ${tarifa} (pago único)`
+                  : tipoCobro === 'pago_fijo' 
+                  ? `Tarifa: Bs ${tarifa} por persona (pago fijo)` 
+                  : `Tarifa: Bs ${tarifa}/hora/persona`;
+                return (
+                  <div className="md:col-span-2 flex items-end pb-2">
+                    <p className="text-xs text-white/50">
+                      {mensaje}. El costo se calculará automáticamente.
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={creating}>Cancelar</Button>
             <Button type="submit" loading={creating}>Crear</Button>
           </div>
-          <p className="text-xs text-white/40">No envíes costo_total / QR – se generan al confirmar.</p>
         </form>
       </Modal>
 
@@ -337,11 +409,11 @@ const ReservasPage = () => {
             <div className="grid md:grid-cols-4 gap-4">
               <div><label className="block text-white/50 mb-1">Propietario</label><p>{detalle.propietario_nombre || detalle.propietario || '—'}</p></div>
               <div><label className="block text-white/50 mb-1">Área</label><p>{detalle.area_nombre || detalle.area || '—'}</p></div>
-              <div><label className="block text-white/50 mb-1">Fecha</label><p>{detalle.fecha_reserva}</p></div>
+              <div><label className="block text-white/50 mb-1">Fecha</label><p>{detalle.fecha ? new Date(detalle.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}</p></div>
               <div><label className="block text-white/50 mb-1">Horario</label><p>{detalle.hora_inicio} - {detalle.hora_fin}</p></div>
               <div><label className="block text-white/50 mb-1">Personas</label><p>{detalle.num_personas}</p></div>
               <div><label className="block text-white/50 mb-1">Estado</label><p><Badge variant={estadoVariant(detalle.estado)}>{detalle.estado}</Badge></p></div>
-              <div><label className="block text-white/50 mb-1">Costo</label><p>{detalle.costo_total ? `$${Number(detalle.costo_total).toFixed(2)}` : '—'}</p></div>
+              <div><label className="block text-white/50 mb-1">Costo</label><p>{detalle.costo_total ? `Bs ${Number(detalle.costo_total).toFixed(2)}` : '—'}</p></div>
               {detalle.observaciones && (
                 <div className="md:col-span-4"><label className="block text-white/50 mb-1">Observaciones</label><p>{detalle.observaciones}</p></div>
               )}
@@ -356,7 +428,7 @@ const ReservasPage = () => {
               )}
             </div>
 
-            {/* Invitados */}
+            {/* Invitados - Comentado porque no está implementado en el backend
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-white font-medium text-sm flex items-center gap-2"><Users className="w-4 h-4" /> Invitados</h4>
@@ -408,6 +480,7 @@ const ReservasPage = () => {
                 </form>
               )}
             </div>
+            */}
 
             <div className="flex justify-end gap-3 pt-2">
               {detalle.estado === 'pendiente' && !editingInvitados && (

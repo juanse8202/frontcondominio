@@ -63,6 +63,8 @@ const ExpensasPage = () => {
   const [pagos, setPagos] = useState([]);
   const [loadingPagos, setLoadingPagos] = useState(false);
   const [pagoSaving, setPagoSaving] = useState(false);
+  const [propietarios, setPropietarios] = useState([]);
+  const [loadingPropietarios, setLoadingPropietarios] = useState(false);
 
   // Formularios
   const [formData, setFormData] = useState({
@@ -77,6 +79,23 @@ const ExpensasPage = () => {
   const [editData, setEditData] = useState({ multas: '', observaciones: '' });
   const [massiveData, setMassiveData] = useState({ mes: '', cuota_basica: '' });
   const [pagoData, setPagoData] = useState({ monto: '', metodo_pago: 'transferencia', comprobante: '', notas: '' });
+
+  // Cargar propietarios al montar el componente
+  React.useEffect(() => {
+    const fetchPropietarios = async () => {
+      setLoadingPropietarios(true);
+      try {
+        const resp = await axiosInstance.get('/propietarios/');
+        const data = resp.data?.results || (Array.isArray(resp.data) ? resp.data : []);
+        setPropietarios(data);
+      } catch (err) {
+        console.error('Error cargando propietarios:', err);
+      } finally {
+        setLoadingPropietarios(false);
+      }
+    };
+    fetchPropietarios();
+  }, []);
 
   // Helpers
   const monthToFirstDay = (m) => (m && /^\d{4}-\d{2}$/.test(m) ? `${m}-01` : m);
@@ -313,13 +332,25 @@ const ExpensasPage = () => {
             <div className={feedback.type === 'success' ? 'alert-success' : 'alert-error'}>{feedback.message}</div>
           )}
           <div className="grid md:grid-cols-3 gap-4">
-            <Input
-              label="Propietario ID"
-              value={formData.propietario}
-              onChange={(e) => setFormData(d => ({ ...d, propietario: e.target.value }))}
-              placeholder="ID"
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-white/70 mb-2">Propietario *</label>
+              <select
+                value={formData.propietario}
+                onChange={(e) => setFormData(d => ({ ...d, propietario: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                disabled={loadingPropietarios}
+              >
+                <option value="">Seleccionar propietario...</option>
+                {propietarios.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.user?.first_name && p.user?.last_name
+                      ? `${p.user.first_name} ${p.user.last_name}`
+                      : p.user?.username || `ID: ${p.id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Input
               label="Mes referencia"
               type="month"

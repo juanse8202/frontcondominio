@@ -90,6 +90,51 @@ const useUnidades = () => {
     }
   };
 
+  // Crear una nueva unidad
+  const createUnidad = async (unidadData) => {
+    try {
+      const response = await axiosInstance.post('/unidades/', unidadData);
+      await fetchUnidades(); // Refrescar la lista
+      return { success: true, data: response.data };
+    } catch (err) {
+      console.error('Error creating unidad:', err);
+      return {
+        success: false,
+        message: err.response?.data?.detail || err.response?.data || 'Error al crear la unidad'
+      };
+    }
+  };
+
+  // Actualizar una unidad existente
+  const updateUnidad = async (unidadId, unidadData) => {
+    try {
+      const response = await axiosInstance.patch(`/unidades/${unidadId}/`, unidadData);
+      await fetchUnidades(); // Refrescar la lista
+      return { success: true, data: response.data };
+    } catch (err) {
+      console.error('Error updating unidad:', err);
+      return {
+        success: false,
+        message: err.response?.data?.detail || err.response?.data || 'Error al actualizar la unidad'
+      };
+    }
+  };
+
+  // Eliminar una unidad
+  const deleteUnidad = async (unidadId) => {
+    try {
+      await axiosInstance.delete(`/unidades/${unidadId}/`);
+      await fetchUnidades(); // Refrescar la lista
+      return { success: true };
+    } catch (err) {
+      console.error('Error deleting unidad:', err);
+      return {
+        success: false,
+        message: err.response?.data?.detail || 'Error al eliminar la unidad'
+      };
+    }
+  };
+
   // Cargar datos al montar el componente
   useEffect(() => {
     fetchUnidades();
@@ -101,7 +146,10 @@ const useUnidades = () => {
     error,
     fetchUnidades,
     fetchUnidadDetails,
-    fetchConvivientes
+    fetchConvivientes,
+    createUnidad,
+    updateUnidad,
+    deleteUnidad
   };
 };
 

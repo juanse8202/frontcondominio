@@ -28,7 +28,7 @@ const useVisitas = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axiosInstance.get('/visitas/');
+      const response = await axiosInstance.get('/seguridad/visitas/');
       const data = response.data.results || response.data;
       setVisitas(data);
       cacheVisitas(data);
@@ -53,7 +53,7 @@ const useVisitas = () => {
     try {
       // Intentar respetar campos esperados por backend
       const payload = normalizeVisitaPayload(visitaData);
-      const response = await axiosInstance.post('/visitas/', payload, withOfflineSupport({}));
+      const response = await axiosInstance.post('/seguridad/visitas/', payload, withOfflineSupport({}));
       const offlinePending = response.offlineOperation || response.data?.offlineOperation;
       let created = response.data?.data || response.data;
       // Si es operación offline simulada, crear un registro temporal local
@@ -84,7 +84,7 @@ const useVisitas = () => {
     setError(null);
     try {
       const payload = normalizeVisitaPayload(visitaData);
-      const response = await axiosInstance.put(`/visitas/${id}/`, payload, withOfflineSupport({}));
+      const response = await axiosInstance.put(`/seguridad/visitas/${id}/`, payload, withOfflineSupport({}));
       const offlinePending = response.offlineOperation || response.data?.offlineOperation;
       let updated = response.data?.data || response.data;
       if (offlinePending) {
@@ -111,7 +111,7 @@ const useVisitas = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axiosInstance.delete(`/visitas/${id}/`, withOfflineSupport({}));
+      const response = await axiosInstance.delete(`/seguridad/visitas/${id}/`, withOfflineSupport({}));
       const offlinePending = response.offlineOperation || response.data?.offlineOperation;
       setVisitas(prev => {
         const next = prev.filter(visita => visita.id !== id);

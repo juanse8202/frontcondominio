@@ -61,10 +61,30 @@ const ReportesList = () => {
   const [editing, setEditing] = useState(null);
   const [formData, setFormData] = useState({ propietario: '', tipo: '', titulo: '', descripcion: '', ubicacion: '' });
   const [saving, setSaving] = useState(false);
+  const [propietarios, setPropietarios] = useState([]);
+  const [loadingPropietarios, setLoadingPropietarios] = useState(false);
   const [detailId, setDetailId] = useState(null);
   const [detailData, setDetailData] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [changingEstado, setChangingEstado] = useState(false);
+
+  // Cargar propietarios al montar el componente
+  React.useEffect(() => {
+    const fetchPropietarios = async () => {
+      setLoadingPropietarios(true);
+      try {
+        const resp = await axiosInstance.get('/propietarios/');
+        const data = resp.data?.results || (Array.isArray(resp.data) ? resp.data : []);
+        console.log('Propietarios cargados:', data);
+        setPropietarios(data);
+      } catch (err) {
+        console.error('Error cargando propietarios:', err);
+      } finally {
+        setLoadingPropietarios(false);
+      }
+    };
+    fetchPropietarios();
+  }, []);
 
   const openCreate = () => {
     setEditing(null);
@@ -234,12 +254,31 @@ const ReportesList = () => {
               onChange={(e) => setFormData(d => ({ ...d, tipo: e.target.value }))}
               options={TIPO_OPTIONS.filter(o => o.value !== '')}
             />
-            <Input
-              label="Propietario (ID)"
-              value={formData.propietario}
-              onChange={(e) => setFormData(d => ({ ...d, propietario: e.target.value }))}
-              placeholder="Opcional"
-            />
+            <div>
+              <label className="block text-sm font-medium text-white/70 mb-2">Propietario</label>
+              <select
+                value={formData.propietario}
+                onChange={(e) => setFormData(d => ({ ...d, propietario: e.target.value }))}
+                className="w-full px-4 py-2.5 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={loadingPropietarios}
+              >
+                <option value="">Opcional</option>
+                {propietarios.length > 0 ? (
+                  propietarios.map(p => {
+                    const nombre = p.user?.first_name && p.user?.last_name
+                      ? `${p.user.first_name} ${p.user.last_name}`
+                      : p.user?.username || `ID: ${p.id}`;
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {nombre}
+                      </option>
+                    );
+                  })
+                ) : (
+                  !loadingPropietarios && <option disabled>No hay propietarios</option>
+                )}
+              </select>
+            </div>
             <div className="col-span-2">
               <Input
                 label="Título"

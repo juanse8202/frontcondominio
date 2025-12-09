@@ -143,6 +143,10 @@ axiosInstance.interceptors.response.use(
       // Emitir evento para que AuthContext pueda reaccionar si escucha
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('auth:logout'));
+        // Redirigir al login si no estamos ya allí
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

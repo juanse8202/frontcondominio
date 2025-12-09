@@ -14,7 +14,7 @@ import { Layers, RefreshCw, Filter, Plus, Edit3 } from 'lucide-react';
 // Campos: nombre, descripcion, capacidad, tarifa_hora, horario_apertura, horario_cierre, activa
 // Validaciones front: capacidad >=1, apertura < cierre.
 
-const emptyForm = { nombre: '', descripcion: '', capacidad: '', tarifa_hora: '', horario_apertura: '', horario_cierre: '', activa: true };
+const emptyForm = { nombre: '', descripcion: '', capacidad: '', tarifa_hora: '', tipo_cobro: 'por_hora', horario_apertura: '', horario_cierre: '', activa: true };
 
 const AreasPage = () => {
   const { items, loading, error, page, setPage, count, setFilter, filters, refresh, updateItem, addItem } = usePagedList({
@@ -54,6 +54,7 @@ const AreasPage = () => {
       descripcion: area.descripcion || '',
       capacidad: area.capacidad ?? '',
       tarifa_hora: area.tarifa_hora || '',
+      tipo_cobro: area.tipo_cobro || 'por_hora',
       horario_apertura: area.horario_apertura || '',
       horario_cierre: area.horario_cierre || '',
       activa: area.activa !== undefined ? area.activa : true
@@ -94,6 +95,7 @@ const AreasPage = () => {
         descripcion: formData.descripcion.trim() || '',
         capacidad: formData.capacidad !== '' ? Number(formData.capacidad) : null,
         tarifa_hora: formData.tarifa_hora !== '' ? formData.tarifa_hora : null,
+        tipo_cobro: formData.tipo_cobro,
         horario_apertura: formData.horario_apertura || null,
         horario_cierre: formData.horario_cierre || null,
         activa: !!formData.activa
@@ -236,7 +238,33 @@ const AreasPage = () => {
               />
             </div>
             <Input label="Capacidad" type="number" min={1} value={formData.capacidad} onChange={(e) => setFormData(d => ({ ...d, capacidad: e.target.value }))} placeholder="Ej: 50" />
-            <Input label="Tarifa Hora" type="number" min={0} step="0.01" value={formData.tarifa_hora} onChange={(e) => setFormData(d => ({ ...d, tarifa_hora: e.target.value }))} placeholder="Ej: 45000" />
+            <Select
+              label="Tipo de Cobro"
+              value={formData.tipo_cobro}
+              onChange={(e) => setFormData(d => ({ ...d, tipo_cobro: e.target.value }))}
+              options={[
+                { value: 'por_hora', label: 'Por Hora/Persona' },
+                { value: 'pago_fijo', label: 'Pago Fijo por Persona' },
+                { value: 'pago_unico', label: 'Pago Único' }
+              ]}
+            />
+            <Input 
+              label={
+                formData.tipo_cobro === 'pago_unico' ? 'Tarifa Única' :
+                formData.tipo_cobro === 'pago_fijo' ? 'Tarifa por Persona' : 
+                'Tarifa por Hora/Persona'
+              } 
+              type="number" 
+              min={0} 
+              step="0.01" 
+              value={formData.tarifa_hora} 
+              onChange={(e) => setFormData(d => ({ ...d, tarifa_hora: e.target.value }))} 
+              placeholder={
+                formData.tipo_cobro === 'pago_unico' ? 'Ej: 300' :
+                formData.tipo_cobro === 'pago_fijo' ? 'Ej: 50' : 
+                'Ej: 10'
+              } 
+            />
             <Input label="Apertura" type="time" value={formData.horario_apertura} onChange={(e) => setFormData(d => ({ ...d, horario_apertura: e.target.value }))} />
             <Input label="Cierre" type="time" value={formData.horario_cierre} onChange={(e) => setFormData(d => ({ ...d, horario_cierre: e.target.value }))} />
             <Select

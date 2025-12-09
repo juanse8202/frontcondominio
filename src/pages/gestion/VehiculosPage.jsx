@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import usePagedList from '../../hooks/usePagedList.jsx';
+import useVehiculosData from '../../hooks/useVehiculosData.jsx';
 import axiosInstance from '../../api/axiosConfig.jsx';
 import PageHeader from '../../components/common/PageHeader.jsx';
 import Table from '../../components/common/Table.jsx';
@@ -17,33 +18,40 @@ const VehiculosPage = () => {
     pageSize: 20,
     initialFilters: { search: '' }
   });
+  const { marcas, tipos, colores, getModelosPorMarca } = useVehiculosData();
 
   const [showFilters, setShowFilters] = useState(false);
+  const [modelosDisponibles, setModelosDisponibles] = useState([]);
   const [generatingId, setGeneratingId] = useState(null);
   const [qrVehicle, setQrVehicle] = useState(null);
   const [feedback, setFeedback] = useState(null);
 
-  // Estados para propietarios y crear vehículo
+  // Estados para propietarios y crear/editar vehículo
   const [propietarios, setPropietarios] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState(null);
   const [newVehicle, setNewVehicle] = useState({
     placa: '',
     marca: '',
     modelo: '',
     color: '',
-    tipo_vehiculo: '',
-    propietario: ''
+    tipo: '',
+    año: '',
+    propietario: '',
+    activo: true
   });
   const [creating, setCreating] = useState(false);
+  const [updating, setUpdating] = useState(false);
 
-  // Cargar lista de propietarios al abrir el modal de crear
+  // Cargar lista de propietarios al abrir el modal de crear o editar
   useEffect(() => {
-    if (showCreateModal && propietarios.length === 0) {
+    if ((showCreateModal || showEditModal) && propietarios.length === 0) {
       axiosInstance.get('/propietarios/?page_size=1000').then(resp => {
         setPropietarios(resp.data.results || resp.data);
       });
     }
-  }, [showCreateModal]);
+  }, [showCreateModal, showEditModal]);
 
   const generateQr = async (vehiculo) => {
     setGeneratingId(vehiculo.id);
@@ -75,9 +83,30 @@ const VehiculosPage = () => {
       marca: '',
       modelo: '',
       color: '',
-      tipo_vehiculo: '',
-      propietario: ''
+      tipo: '',
+      año: '',
+      propietario: '',
+      activo: true
     });
+    setModelosDisponibles([]);
+    setFeedback(null);
+  };
+
+  // Abrir modal de edición
+  const openEditModal = (vehiculo) => {
+    setEditingVehicle(vehiculo);
+    setNewVehicle({
+      placa: vehiculo.placa || '',
+      marca: vehiculo.marca || '',
+      modelo: vehiculo.modelo || '',
+      color: vehiculo.color || '',
+      tipo: vehiculo.tipo || '',
+      año: vehiculo.año || '',
+      propietario: vehiculo.propietario || '',
+      activo: vehiculo.activo !== undefined ? vehiculo.activo : true
+    });
+    setModelosDisponibles(getModelosPorMarca(vehiculo.marca || ''));
+    setShowEditModal(true);
     setFeedback(null);
   };
 
@@ -86,41 +115,79 @@ const VehiculosPage = () => {
     setNewVehicle(v => ({ ...v, propietario: e.target.value }));
   };
 
+  // Actualizar modelos cuando cambia la marca
+  const handleMarcaChange = (e) => {
+    const marca = e.target.value;
+    setNewVehicle(v => ({ ...v, marca, modelo: '' }));
+    setModelosDisponibles(getModelosPorMarca(marca));
+  };
+
   // ...existing code...
 
 const handleCreateVehicle = async () => {
   setCreating(true);
   setFeedback(null);
   try {
-    // Solo enviar el id del propietario como número
-    const { propietario, ...rest } = newVehicle;
     const payload = {
-      ...rest,
-      propietario: propietario ? Number(propietario) : undefined
+      placa: newVehicle.placa,
+      marca: newVehicle.marca,
+      modelo: newVehicle.modelo,
+      color: newVehicle.color,
+      tipo: newVehicle.tipo || null,
+      año: newVehicle.año ? parseInt(newVehicle.año) : null,
+      propietario: Number(newVehicle.propietario),
+      activo: newVehicle.activo
     };
     await axiosInstance.post('/vehiculos/', payload);
     refresh();
     setShowCreateModal(false);
     setFeedback({ type: 'success', message: 'Vehículo creado correctamente' });
   } catch (err) {
-    setFeedback({ type: 'error', message: err.response?.data?.detail || 'Error al crear vehículo' });
+    const errorMsg = err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Error al crear vehículo';
+    setFeedback({ type: 'error', message: errorMsg });
   } finally {
     setCreating(false);
   }
 };
 
+const handleUpdateVehicle = async () => {
+  setUpdating(true);
+  setFeedback(null);
+  try {
+    const payload = {
+      placa: newVehicle.placa,
+      marca: newVehicle.marca,
+      modelo: newVehicle.modelo,
+      color: newVehicle.color,
+      tipo: newVehicle.tipo || null,
+      año: newVehicle.año ? parseInt(newVehicle.año) : null,
+      propietario: Number(newVehicle.propietario),
+      activo: newVehicle.activo
+    };
+    await axiosInstance.patch(`/vehiculos/${editingVehicle.id}/`, payload);
+    refresh();
+    setShowEditModal(false);
+    setFeedback({ type: 'success', message: 'Vehículo actualizado correctamente' });
+  } catch (err) {
+    const errorMsg = err.response?.data?.detail || JSON.stringify(err.response?.data) || 'Error al actualizar vehículo';
+    setFeedback({ type: 'error', message: errorMsg });
+  } finally {
+    setUpdating(false);
+  }
+};
+
 // ...existing code...
 
-  const columns = [
-    { key: 'id', header: 'ID', render: (v) => <span className="text-xs text-white/60">{v}</span> },
-    { key: 'placa', header: 'Placa', render: (v) => v || '—' },
-    { key: 'marca', header: 'Marca', render: (v) => v || '—' },
-    { key: 'modelo', header: 'Modelo', render: (v) => v || '—' },
-    { key: 'color', header: 'Color', render: (v) => v || '—' },
-    { key: 'tipo_vehiculo', header: 'Tipo', render: (v) => <Badge variant="info">{v || '—'}</Badge> },
+const columns = [
+    { key: 'id', header: 'ID', className: 'w-16', render: (v) => <span className="text-xs text-white/60">#{v}</span> },
+    { key: 'placa', header: 'Placa', className: 'w-28', render: (v) => <span className="font-semibold">{v || '—'}</span> },
+    { key: 'marca', header: 'Marca', className: 'w-32', render: (v) => v || '—' },
+    { key: 'modelo', header: 'Modelo', className: 'w-32', render: (v) => v || '—' },
+    { key: 'color', header: 'Color', className: 'w-24', render: (v) => v || '—' },
+    { key: 'tipo_display', header: 'Tipo', className: 'w-28', render: (v) => <Badge variant="info">{v || '—'}</Badge> },
     { key: 'propietario_nombre', header: 'Propietario', render: (v) => v || '—' },
-    { key: 'activo', header: 'Estado', render: (v) => v ? <Badge variant="success">Activo</Badge> : <Badge variant="error">Inactivo</Badge> },
-    { key: 'qr_code_url', header: 'QR', render: (v, row) => (
+    { key: 'activo', header: 'Estado', className: 'w-24', render: (v) => v ? <Badge variant="success">Activo</Badge> : <Badge variant="error">Inactivo</Badge> },
+    { key: 'qr_code_url', header: 'QR', className: 'w-32', render: (v, row) => (
         v ? (
           <Button variant="secondary" size="xs" onClick={() => openQr(row)}>Ver</Button>
         ) : (
@@ -128,8 +195,16 @@ const handleCreateVehicle = async () => {
         )
       )
     },
-    { key: 'actions', header: 'Acciones', className: 'text-right', cellClassName: 'text-right', render: (_, row) => (
+    { key: 'actions', header: 'Acciones', className: 'text-right w-40', cellClassName: 'text-right', render: (_, row) => (
         <div className="flex justify-end gap-2">
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={() => openEditModal(row)}
+            title="Editar"
+          >
+            Editar
+          </Button>
           <Button
             variant="secondary"
             size="xs"
@@ -138,7 +213,7 @@ const handleCreateVehicle = async () => {
             onClick={() => generateQr(row)}
             title={row.qr_code_url ? 'Regenerar QR' : 'Generar QR'}
           >
-            {generatingId === row.id ? 'Generando...' : (row.qr_code_url ? 'Regenerar' : 'Generar')}
+            {generatingId === row.id ? '...' : 'QR'}
           </Button>
         </div>
       )
@@ -253,52 +328,106 @@ const handleCreateVehicle = async () => {
             label="Placa"
             value={newVehicle.placa}
             onChange={e => setNewVehicle(v => ({ ...v, placa: e.target.value }))}
+            placeholder="Ej: ABC-123"
           />
-          <Input
-            label="Marca"
-            value={newVehicle.marca}
-            onChange={e => setNewVehicle(v => ({ ...v, marca: e.target.value }))}
-          />
-          <Input
-            label="Modelo"
-            value={newVehicle.modelo}
-            onChange={e => setNewVehicle(v => ({ ...v, modelo: e.target.value }))}
-          />
-          <Input
-            label="Color"
-            value={newVehicle.color}
-            onChange={e => setNewVehicle(v => ({ ...v, color: e.target.value }))}
-          />
-          <Input
-            label="Tipo de vehículo"
-            value={newVehicle.tipo_vehiculo}
-            onChange={e => setNewVehicle(v => ({ ...v, tipo_vehiculo: e.target.value }))}
-          />
-          <label className="block text-white/80 mb-2">Propietario (ID o seleccione)</label>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              min="1"
-              placeholder="ID propietario"
-              value={newVehicle.propietario}
-              onChange={handlePropietarioChange}
-              style={{ width: 120 }}
-            />
+          
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Marca *</label>
             <select
-              className="input w-full"
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.marca}
+              onChange={handleMarcaChange}
+            >
+              <option value="">Seleccionar marca</option>
+              {marcas.map(marca => (
+                <option key={marca.nombre} value={marca.nombre}>{marca.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Modelo *</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.modelo}
+              onChange={e => setNewVehicle(v => ({ ...v, modelo: e.target.value }))}
+              disabled={!newVehicle.marca}
+            >
+              <option value="">Seleccionar modelo</option>
+              {modelosDisponibles.map(modelo => (
+                <option key={modelo} value={modelo}>{modelo}</option>
+              ))}
+            </select>
+            {!newVehicle.marca && (
+              <p className="text-white/40 text-xs mt-1">Selecciona una marca primero</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Color *</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.color}
+              onChange={e => setNewVehicle(v => ({ ...v, color: e.target.value }))}
+            >
+              <option value="">Seleccionar color</option>
+              {colores.map(color => (
+                <option key={color} value={color}>{color}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Tipo</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.tipo || ''}
+              onChange={e => setNewVehicle(v => ({ ...v, tipo: e.target.value }))}
+            >
+              <option value="">Seleccionar tipo</option>
+              {tipos.map(tipo => (
+                <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
+              ))}
+            </select>
+          </div>
+
+<Input
+            label="Año"
+            type="number"
+            value={newVehicle.año}
+            onChange={e => setNewVehicle(v => ({ ...v, año: e.target.value }))}
+            placeholder="Ej: 2023"
+            min="1900"
+            max={new Date().getFullYear() + 1}
+          />
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Propietario *</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
               value={newVehicle.propietario}
               onChange={handlePropietarioChange}
             >
               <option value="">Seleccione un propietario</option>
               {propietarios.map(p => (
                 <option key={p.id} value={p.id}>
-                  {p.user?.first_name
-                    ? `${p.user.first_name} ${p.user.last_name} (${p.user.username})`
-                    : p.user?.username || `ID ${p.id}`}
+                  {p.nombre_completo || p.user?.username || `ID ${p.id}`} - {p.documento_identidad}
                 </option>
               ))}
             </select>
           </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="activo"
+              checked={newVehicle.activo}
+              onChange={e => setNewVehicle(v => ({ ...v, activo: e.target.checked }))}
+              className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="activo" className="text-white/70 text-sm">Vehículo activo</label>
+          </div>
+
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setShowCreateModal(false)}>Cancelar</Button>
             <Button
@@ -309,11 +438,147 @@ const handleCreateVehicle = async () => {
                 !newVehicle.placa ||
                 !newVehicle.marca ||
                 !newVehicle.modelo ||
-                !newVehicle.tipo_vehiculo ||
                 !newVehicle.propietario
               }
             >
               {creating ? 'Creando...' : 'Crear'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal para editar vehículo */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Editar vehículo"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {feedback && (
+            <div className={feedback.type === 'error' ? 'alert-error' : 'alert-success'}>
+              {feedback.message}
+            </div>
+          )}
+
+          <Input
+            label="Placa"
+            value={newVehicle.placa}
+            onChange={e => setNewVehicle(v => ({ ...v, placa: e.target.value }))}
+            placeholder="Ej: ABC-123"
+          />
+          
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Marca *</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.marca}
+              onChange={handleMarcaChange}
+            >
+              <option value="">Seleccionar marca</option>
+              {marcas.map(marca => (
+                <option key={marca.nombre} value={marca.nombre}>{marca.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Modelo *</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.modelo}
+              onChange={e => setNewVehicle(v => ({ ...v, modelo: e.target.value }))}
+              disabled={!newVehicle.marca}
+            >
+              <option value="">Seleccionar modelo</option>
+              {modelosDisponibles.map(modelo => (
+                <option key={modelo} value={modelo}>{modelo}</option>
+              ))}
+            </select>
+            {!newVehicle.marca && (
+              <p className="text-white/40 text-xs mt-1">Selecciona una marca primero</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Color *</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.color}
+              onChange={e => setNewVehicle(v => ({ ...v, color: e.target.value }))}
+            >
+              <option value="">Seleccionar color</option>
+              {colores.map(color => (
+                <option key={color} value={color}>{color}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Tipo</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.tipo || ''}
+              onChange={e => setNewVehicle(v => ({ ...v, tipo: e.target.value }))}
+            >
+              <option value="">Seleccionar tipo</option>
+              {tipos.map(tipo => (
+                <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <Input
+            label="Año"
+            type="number"
+            value={newVehicle.año}
+            onChange={e => setNewVehicle(v => ({ ...v, año: e.target.value }))}
+            placeholder="Ej: 2023"
+            min="1900"
+            max={new Date().getFullYear() + 1}
+          />
+
+          <div>
+            <label className="block text-white/70 text-sm mb-2">Propietario *</label>
+            <select
+              className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 w-full"
+              value={newVehicle.propietario}
+              onChange={handlePropietarioChange}
+            >
+              <option value="">Seleccione un propietario</option>
+              {propietarios.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.nombre_completo || p.user?.username || `ID ${p.id}`} - {p.documento_identidad}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="activo-edit"
+              checked={newVehicle.activo}
+              onChange={e => setNewVehicle(v => ({ ...v, activo: e.target.checked }))}
+              className="w-4 h-4 text-blue-600 bg-white/10 border-white/20 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="activo-edit" className="text-white/70 text-sm">Vehículo activo</label>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setShowEditModal(false)}>Cancelar</Button>
+            <Button
+              variant="primary"
+              onClick={handleUpdateVehicle}
+              disabled={
+                updating ||
+                !newVehicle.placa ||
+                !newVehicle.marca ||
+                !newVehicle.modelo ||
+                !newVehicle.propietario
+              }
+            >
+              {updating ? 'Actualizando...' : 'Actualizar'}
             </Button>
           </div>
         </div>

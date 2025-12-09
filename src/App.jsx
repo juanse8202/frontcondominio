@@ -11,6 +11,9 @@ import { AreasPage, ReservasPage } from './pages/areas_comunes'
 import { ComunicadosPage } from './pages/comunicacion'
 import { ReportesPage } from './pages/mantenimiento'
 import { VisitasPage } from './pages/seguridad'
+import PlateRecognitionPage from './pages/seguridad/PlateRecognitionPage'
+import PlateRecognitionHistoryPage from './pages/seguridad/PlateRecognitionHistoryPage'
+import UsuariosPage from './pages/administracion/UsuariosPage'
 import NotFoundPage from './pages/NotFoundPage'
 
 // Debug components
@@ -52,6 +55,7 @@ function App() {
           <Route path="/expensas" element={<ProtectedLayout><ExpensasPage /></ProtectedLayout>} />
           <Route path="/pagos" element={<ProtectedLayout><PagosPage /></ProtectedLayout>} />
           <Route path="/propietarios" element={<ProtectedLayout><PropietariosPage /></ProtectedLayout>} />
+          <Route path="/usuarios" element={<ProtectedLayout><UsuariosPage /></ProtectedLayout>} />
           <Route path="/areas" element={<ProtectedLayout><AreasPage /></ProtectedLayout>} />
           <Route path="/comunicados" element={<ProtectedLayout><ComunicadosPage /></ProtectedLayout>} />
     
@@ -94,6 +98,24 @@ function App() {
           <Route path="/vehiculos" element={<ProtectedLayout><VehiculosPage /></ProtectedLayout>} />
 
           <Route path="/areas" element={<ProtectedLayout><AreasPage /></ProtectedLayout>} />
+
+          {/* Rutas de Reconocimiento de Placas */}
+          <Route
+            path="/reconocimiento-placas"
+            element={
+              <ProtectedLayout>
+                <PlateRecognitionPage />
+              </ProtectedLayout>
+            }
+          />
+          <Route
+            path="/historial-placas"
+            element={
+              <ProtectedLayout>
+                <PlateRecognitionHistoryPage />
+              </ProtectedLayout>
+            }
+          />
 
 
           {/* Debug Route */}

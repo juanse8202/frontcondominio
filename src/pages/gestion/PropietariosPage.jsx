@@ -54,6 +54,8 @@ const PropietariosPage = () => {
       const response = await axiosInstance.patch(`/propietarios/${editing.id}/`, payload);
       updateItem(editing.id, response.data);
       setFeedback({ type: 'success', message: 'Propietario actualizado' });
+      // Refrescar la tabla para mostrar los cambios
+      await refresh();
       setTimeout(() => { setEditing(null); setFeedback(null); }, 1000);
     } catch (err) {
       setFeedback({ type: 'error', message: err.response?.data?.detail || 'Error al actualizar' });

@@ -15,7 +15,7 @@ import { UsersRound, RefreshCw, Filter, Plus, Eye, QrCode, Calendar, AlertCircle
 
 const VisitasPage = () => {
   const { items, loading, error, page, setPage, count, setFilter, filters, refresh, addItem, updateItem } = usePagedList({
-    endpoint: '/visitas/',
+    endpoint: '/seguridad/visitas/',
     pageSize: 20,
     initialFilters: { search: '', fecha_visita: '', propietario: '', activa: '' }
   });
@@ -39,7 +39,7 @@ const VisitasPage = () => {
     setFeedback(null);
     setEditing(false);
     try {
-      const resp = await axiosInstance.get(`/visitas/${visita.id}/`);
+      const resp = await axiosInstance.get(`/seguridad/visitas/${visita.id}/`);
       setDetalle(resp.data);
       setEditData({
         nombre_visitante: resp.data.nombre_visitante || '',
@@ -57,7 +57,7 @@ const VisitasPage = () => {
   const deactivateVisita = async (visita) => {
     setActionId(visita.id); setFeedback(null);
     try {
-      const resp = await axiosInstance.patch(`/visitas/${visita.id}/`, { activa: false });
+      const resp = await axiosInstance.patch(`/seguridad/visitas/${visita.id}/`, { activa: false });
       updateItem(visita.id, resp.data);
       if (selected?.id === visita.id) setDetalle(resp.data);
       setFeedback({ type: 'success', message: 'Visita desactivada' });
@@ -78,7 +78,7 @@ const VisitasPage = () => {
         hora_entrada_esperada: editData.hora_entrada_esperada || null,
         observaciones: editData.observaciones || ''
       };
-      const resp = await axiosInstance.patch(`/visitas/${detalle.id}/`, payload);
+      const resp = await axiosInstance.patch(`/seguridad/visitas/${detalle.id}/`, payload);
       updateItem(detalle.id, resp.data);
       setDetalle(resp.data);
       setEditing(false);
@@ -101,7 +101,7 @@ const VisitasPage = () => {
         hora_entrada_esperada: formData.hora_entrada_esperada || null,
         observaciones: formData.observaciones.trim() || ''
       };
-      const resp = await axiosInstance.post('/visitas/', payload);
+      const resp = await axiosInstance.post('/seguridad/visitas/', payload);
       addItem(resp.data);
       setFeedback({ type: 'success', message: 'Visita creada' });
       setFormData({ propietario: '', nombre_visitante: '', documento_visitante: '', telefono_visitante: '', fecha_visita: '', hora_entrada_esperada: '', observaciones: '' });

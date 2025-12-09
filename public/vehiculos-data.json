@@ -1,0 +1,111 @@
+{
+  "marcas": [
+    {
+      "nombre": "Toyota",
+      "modelos": ["Corolla", "Camry", "RAV4", "Hilux", "Land Cruiser", "Yaris", "Prius", "4Runner", "Fortuner", "Avanza"]
+    },
+    {
+      "nombre": "Honda",
+      "modelos": ["Civic", "Accord", "CR-V", "Pilot", "Fit", "HR-V", "Odyssey", "City"]
+    },
+    {
+      "nombre": "Ford",
+      "modelos": ["F-150", "Mustang", "Explorer", "Escape", "Ranger", "Bronco", "Edge", "Fusion", "EcoSport"]
+    },
+    {
+      "nombre": "Chevrolet",
+      "modelos": ["Silverado", "Malibu", "Equinox", "Traverse", "Tahoe", "Camaro", "Colorado", "Cruze", "Spark", "Onix"]
+    },
+    {
+      "nombre": "Nissan",
+      "modelos": ["Altima", "Sentra", "Rogue", "Pathfinder", "Frontier", "Versa", "Murano", "Kicks", "X-Trail"]
+    },
+    {
+      "nombre": "Hyundai",
+      "modelos": ["Elantra", "Sonata", "Tucson", "Santa Fe", "Accent", "Kona", "Palisade", "Creta", "Venue"]
+    },
+    {
+      "nombre": "Kia",
+      "modelos": ["Forte", "Optima", "Sportage", "Sorento", "Soul", "Telluride", "Seltos", "Rio", "Carnival"]
+    },
+    {
+      "nombre": "Mazda",
+      "modelos": ["Mazda3", "Mazda6", "CX-5", "CX-9", "MX-5", "CX-30", "CX-3", "Mazda2"]
+    },
+    {
+      "nombre": "Volkswagen",
+      "modelos": ["Jetta", "Passat", "Tiguan", "Atlas", "Golf", "Beetle", "Arteon", "Polo", "Taos", "T-Cross"]
+    },
+    {
+      "nombre": "BMW",
+      "modelos": ["Serie 3", "Serie 5", "X3", "X5", "Serie 7", "X1", "Serie 4", "X7", "Serie 2"]
+    },
+    {
+      "nombre": "Mercedes-Benz",
+      "modelos": ["Clase C", "Clase E", "GLC", "GLE", "Clase A", "Clase S", "GLA", "GLB", "GLS"]
+    },
+    {
+      "nombre": "Audi",
+      "modelos": ["A4", "A6", "Q5", "Q7", "A3", "Q3", "A8", "Q8", "e-tron"]
+    },
+    {
+      "nombre": "Jeep",
+      "modelos": ["Wrangler", "Cherokee", "Grand Cherokee", "Compass", "Renegade", "Gladiator"]
+    },
+    {
+      "nombre": "Subaru",
+      "modelos": ["Outback", "Forester", "Crosstrek", "Impreza", "Legacy", "Ascent", "WRX"]
+    },
+    {
+      "nombre": "Mitsubishi",
+      "modelos": ["Outlander", "Eclipse Cross", "Pajero", "L200", "Mirage", "ASX", "Montero"]
+    },
+    {
+      "nombre": "Suzuki",
+      "modelos": ["Swift", "Vitara", "Jimny", "S-Cross", "Baleno", "Ignis", "Alto", "Celerio"]
+    },
+    {
+      "nombre": "Renault",
+      "modelos": ["Sandero", "Logan", "Duster", "Kwid", "Captur", "Koleos", "Megane", "Oroch"]
+    },
+    {
+      "nombre": "Peugeot",
+      "modelos": ["208", "308", "2008", "3008", "5008", "Partner", "Rifter", "Landtrek"]
+    },
+    {
+      "nombre": "Citroën",
+      "modelos": ["C3", "C4", "C5", "Berlingo", "C3 Aircross", "C4 Cactus", "C5 Aircross"]
+    },
+    {
+      "nombre": "Fiat",
+      "modelos": ["Uno", "Mobi", "Argo", "Toro", "Cronos", "Ducato", "Strada", "Pulse"]
+    }
+  ],
+  "tipos": [
+    { "value": "sedan", "label": "Sedán" },
+    { "value": "suv", "label": "SUV" },
+    { "value": "pickup", "label": "Pickup" },
+    { "value": "hatchback", "label": "Hatchback" },
+    { "value": "camioneta", "label": "Camioneta" },
+    { "value": "van", "label": "Van" },
+    { "value": "coupe", "label": "Coupé" },
+    { "value": "convertible", "label": "Convertible" },
+    { "value": "minivan", "label": "Minivan" },
+    { "value": "crossover", "label": "Crossover" }
+  ],
+  "colores": [
+    "Blanco",
+    "Negro",
+    "Gris",
+    "Plata",
+    "Rojo",
+    "Azul",
+    "Verde",
+    "Amarillo",
+    "Naranja",
+    "Café",
+    "Beige",
+    "Dorado",
+    "Morado"
+  ]
+}
